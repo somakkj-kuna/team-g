@@ -1,1 +1,6 @@
 submit/
+sample_data/
+sample_data.zip
+
+# 수집 재수집 샌드박스 (server131 collect_test 사본 — API 서비스 키·테스트 데이터 포함, 공개 repo 보호)
+collect_test/
