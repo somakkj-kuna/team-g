@@ -1,0 +1,953 @@
+﻿# QC 규칙 마스터 설정
+# 변수별 기본값. 기관별(config/agencies/) · 관측소별(config/stations/) 오버라이드 가능.
+# 수정 시 반드시 검증 명령 기록: python -m py_compile src/pipeline/01_aqc1.py
+#
+# ─────────────────────────────────────────
+# 검사 on/off 토글 (Task E)
+# ─────────────────────────────────────────
+# 각 변수의 [variables.X.enabled_tests] 에서 검사별 true/false 로 켜고 끈다.
+# 파이프라인 dispatch 는 enabled_tests.{검사}=false(또는 키 없음)이면 해당 검사를
+# 건너뛰고 그 검사 몫은 GOOD(1) 로 남는다. 운영 안전을 위해 "키 없음=off" 기본.
+# 적용 검사: zero, range, dynamic_range, stuck, attenuated, spike, roc,
+#            rolling, reference, vertical, vector_range, edge, consistency
+#
+# ─────────────────────────────────────────
+# 신규 3종 검사 (QC_algo_comparison.md 기반, AQC1 단계 → flag_aqc1 병합)
+# ─────────────────────────────────────────
+# 1) dynamic_range : 월별/계절 분위값 테이블로 "고정범위 내 계절 이상값" 탐지
+#      [variables.X.dynamic_range]  mode="monthly"|"seasonal"
+#      [variables.X.dynamic_range.table] "1"=[lo_bad,hi_bad] 또는 [lo_bad,lo_sus,hi_sus,hi_bad]
+#      [variables.X.dynamic_range.fallback] vmin=.., vmax=..  (테이블 없는 월용)
+# 2) attenuated     : rolling 변동량(std|range)이 min_var 미만 지속 → SUSPECT (센서 감쇠)
+#      [variables.X.attenuated]  window="72h", min_var=.., metric="std"|"range"
+# 3) spike method   : [variables.X.spike] method="neighbor"(기본)|"tukey53h"|"zscore"|"iqr"|"median"
+#      tukey53h 는 MAD 배수 N = spike.threshold(없으면 spike.fail) 사용
+
+
+# ─────────────────────────────────────────
+# 원본 데이터 경로 (raw CSV)
+# ─────────────────────────────────────────
+[paths.khoa.tidal]
+raw = "/data/DATA/OBS/raw/khoa/tidal"
+
+[paths.khoa.buoy]
+raw = "/data/DATA/OBS/raw/khoa/buoy"
+
+[paths.kma.buoy]
+raw = "/data/DATA/OBS/raw/kma/buoy"
+
+[paths.nifs.buoy]
+raw = "/data/DATA/OBS/raw/nifs/buoy"
+
+[flag]
+good        = 1
+suspect     = 2
+bad         = 3
+interpolated = 4
+missing     = 9
+
+[standardization]
+timestamp_col = "time"
+station_col   = "station_id"
+common_cols   = ["time", "agency", "station_id", "lat", "lon", "depth_m"]
+
+# 원시 var_id → 표준 var_id 매핑
+[standardization.var_aliases]
+# variables.yaml 기준 표준명 (raw CSV는 이미 표준명 사용 — alias 최소화)
+temp          = ["temp"]
+sal           = ["sal"]
+sur_temp      = ["sur_temp"]
+mid_temp      = ["mid_temp"]
+bot_temp      = ["bot_temp"]
+tide_pre      = ["tide_pre", "tide_pred", "pre_value"]
+tide_real     = ["tide_real", "real_value"]
+current_speed = ["current_speed"]
+current_dir   = ["current_dir"]
+current_u     = ["current_u"]
+current_v     = ["current_v"]
+wave_h        = ["wave_h"]
+air_temp      = ["air_temp"]
+air_pres      = ["air_pres"]
+air_humi      = ["air_humi"]
+wind_dir      = ["wind_dir"]
+wind_speed    = ["wind_speed"]
+wind_gust     = ["wind_gust"]
+wind_u        = ["wind_u"]
+wind_v        = ["wind_v"]
+
+# 결측 대체 sentinel
+[standardization.missing_sentinels]
+values = [-999.0, -9999.0, 999.0, 9999.0]
+
+# ─────────────────────────────────────────
+# 수온 (표층)
+# ─────────────────────────────────────────
+[variables.temp]
+enable = true
+
+[variables.temp.enabled_tests]
+zero    = true
+range   = true
+dynamic_range = true   # 신규: 1월 분위표로 계절 이상 수온 탐지 (검증용 활성)
+stuck   = true
+attenuated = true      # 신규: 수온 신호 감쇠(센서 고착 전조) 탐지
+roc     = false
+spike   = true
+rolling = true
+reference = false
+vertical  = false
+edge      = true
+
+[variables.temp.range]
+min = -2.0
+max = 40.0
+
+# 신규: 동적 분위값 범위 (경험적 임시 기준 — 한국 연근해 1월 표층수온 분포 개략)
+[variables.temp.dynamic_range]
+mode = "monthly"
+[variables.temp.dynamic_range.table]
+"1" = [-2.0, 1.0, 16.0, 20.0]   # 1월: (lo_bad, lo_sus, hi_sus, hi_bad)
+[variables.temp.dynamic_range.fallback]
+vmin = -2.0
+vmax = 40.0
+
+# 신규: 신호 감쇠 (경험적 임시 기준 — 72h 표준편차 0.05°C 미만 지속 시 의심)
+[variables.temp.attenuated]
+window  = "72h"
+min_var = 0.05
+metric  = "std"
+
+[variables.temp.stuck]
+# 겨울 평탄 구간 과검출 방지: 기존 5/10 → 완화
+[variables.temp.stuck.hourly]
+suspect_count = 12
+fail_count    = 48
+
+[variables.temp.roc]
+suspect_per_hour = 3.0
+fail_per_hour    = 5.0
+
+[variables.temp.spike]
+method  = "neighbor"   # neighbor(기본) | tukey53h | zscore | iqr | median
+suspect = 3.0
+fail    = 7.0
+threshold = 3.0        # tukey53h 선택 시 MAD 배수 N (QARTOD 권고 수온 N=3)
+
+[variables.temp.rolling]
+window        = "2160h"
+suspect_sigma = 3.0
+fail_sigma    = 5.0
+min_periods   = 100
+min_std       = 0.5
+
+[variables.temp.edge]
+n_start = 3
+abs_fail    = 2.0
+abs_suspect = 1.0
+
+[variables.sur_temp]
+enable = true
+
+[variables.sur_temp.enabled_tests]
+zero      = true
+range     = true
+dynamic_range = false  # 신규: 분위표 확보 후 활성 (토글 off 예시)
+stuck     = true
+attenuated = true      # 신규: 표층수온 신호 감쇠 탐지
+roc       = false
+spike     = true
+rolling   = true
+reference = false
+vertical  = false
+edge      = true
+
+[variables.sur_temp.range]
+min = -2.0
+max = 40.0
+
+# 신규: 동적 분위값 범위 (분위표 확보 전 콜드스타트 — fallback 만 동작)
+[variables.sur_temp.dynamic_range]
+mode = "monthly"
+[variables.sur_temp.dynamic_range.fallback]
+vmin = -2.0
+vmax = 40.0
+
+# 신규: 신호 감쇠 (경험적 임시 기준)
+[variables.sur_temp.attenuated]
+window  = "72h"
+min_var = 0.05
+metric  = "std"
+
+[variables.sur_temp.stuck]
+[variables.sur_temp.stuck.hourly]
+suspect_count = 12
+fail_count    = 48
+
+[variables.sur_temp.roc]
+suspect_per_hour = 3.0
+fail_per_hour    = 5.0
+
+[variables.sur_temp.spike]
+method  = "neighbor"   # neighbor(기본) | tukey53h | zscore | iqr | median
+suspect = 3.0
+fail    = 7.0
+threshold = 3.0        # tukey53h 선택 시 MAD 배수 N
+
+[variables.sur_temp.rolling]
+window        = "2160h"
+suspect_sigma = 3.0
+fail_sigma    = 5.0
+min_periods   = 100
+min_std       = 0.5
+
+[variables.sur_temp.edge]
+n_start = 3
+abs_fail    = 2.0
+abs_suspect = 1.0
+
+[variables.mid_temp]
+enable = true
+
+[variables.mid_temp.enabled_tests]
+zero      = true
+range     = true
+stuck     = true
+roc       = false
+spike     = true
+rolling   = true
+reference = false
+vertical  = false
+edge      = true
+
+[variables.mid_temp.range]
+min = 0.0
+max = 35.0
+
+[variables.mid_temp.stuck]
+[variables.mid_temp.stuck.hourly]
+suspect_count = 12
+fail_count    = 48
+
+[variables.mid_temp.roc]
+suspect_per_hour = 2
+fail_per_hour    = 4
+
+[variables.mid_temp.spike]
+suspect = 2.5
+fail    = 8.0
+
+[variables.mid_temp.rolling]
+window        = "2160h"
+suspect_sigma = 3.0
+fail_sigma    = 5.0
+min_periods   = 100
+min_std       = 0.2
+
+[variables.mid_temp.edge]
+n_start = 3
+abs_fail    = 2.0
+abs_suspect = 1.0
+
+[variables.mid_temp.vertical]
+[[variables.mid_temp.vertical.rules]]
+other    = "sur_temp"
+min_diff = -2.0
+max_diff =  8.0
+[[variables.mid_temp.vertical.rules]]
+other    = "bot_temp"
+min_diff = -2.0
+max_diff =  6.0
+
+# ─────────────────────────────────────────
+# 수온 (저층)
+# ─────────────────────────────────────────
+[variables.bot_temp]
+enable = true
+
+[variables.bot_temp.enabled_tests]
+zero      = true
+range     = true
+stuck     = true
+roc       = false
+spike     = true
+rolling   = true
+reference = false
+vertical  = false
+edge      = true
+
+[variables.bot_temp.range]
+min = 0.0
+max = 33.0
+
+[variables.bot_temp.stuck]
+[variables.bot_temp.stuck.hourly]
+suspect_count = 12
+fail_count    = 48
+
+[variables.bot_temp.roc]
+suspect_per_hour = 1.5
+fail_per_hour    = 3.0
+
+[variables.bot_temp.spike]
+suspect = 3.0
+fail    = 7.0
+
+[variables.bot_temp.rolling]
+window        = "2160h"
+suspect_sigma = 3.0
+fail_sigma    = 5.0
+min_periods   = 100
+min_std       = 0.2
+
+[variables.bot_temp.edge]
+n_start = 3
+abs_fail    = 2.0
+abs_suspect = 1.0
+
+[variables.bot_temp.vertical]
+[[variables.bot_temp.vertical.rules]]
+other    = "mid_temp"
+min_diff = -2.0
+max_diff =  5.0
+[[variables.bot_temp.vertical.rules]]
+other    = "sur_temp"
+min_diff = -3.0
+max_diff = 10.0
+
+# ─────────────────────────────────────────
+# 염분 (표층)
+# ─────────────────────────────────────────
+[variables.sal]
+enable = true
+
+[variables.sal.enabled_tests]
+zero     = true
+range    = true
+seasonal = false
+stuck    = false
+attenuated = false     # 신규: 염분 감쇠 탐지 옵션 (min_var 튜닝 후 활성 권고)
+roc      = false
+spike    = false
+rolling  = true
+reference = false
+vertical  = false
+edge      = true
+
+# 신규: 신호 감쇠 옵션 (경험적 임시 기준 — 72h 표준편차 0.1 psu 미만)
+[variables.sal.attenuated]
+window  = "72h"
+min_var = 0.1
+metric  = "std"
+
+[variables.sal.range]
+min = 0.0
+max = 40.0
+
+# 계절별 범위 (general_range 내에서 추가 narrowing)
+[[variables.sal.range.seasonal]]
+label  = "winter"
+months = [1, 2, 3]
+min = 25.0
+max = 35.0
+[[variables.sal.range.seasonal]]
+label  = "spring"
+months = [4, 5, 6]
+min = 24.0
+max = 35.0
+[[variables.sal.range.seasonal]]
+label  = "summer"
+months = [7, 8, 9]
+min = 5.0
+max = 35.0
+[[variables.sal.range.seasonal]]
+label  = "autumn"
+months = [10, 11, 12]
+min = 20.0
+max = 35.0
+
+[variables.sal.zero]
+single_fail = true
+
+[variables.sal.stuck]
+[variables.sal.stuck.hourly]
+suspect_count = 24
+fail_count    = 168 #일주일치
+
+[variables.sal.roc]
+suspect_per_hour = 1.5
+fail_per_hour    = 3.0
+
+[variables.sal.spike]
+suspect = 5.0
+fail    = 10.0
+
+[variables.sal.rolling]
+window        = "2160h"
+suspect_sigma = 3.0
+fail_sigma    = 5.0
+min_periods   = 100
+min_std       = 0.5
+
+[variables.sal.edge]
+n_start = 3
+abs_fail    = 5.0
+abs_suspect = 2.0
+
+[variables.tide_pre]
+enable = true
+
+[variables.tide_pre.enabled_tests]
+range    = false
+stuck    = false
+roc      = false
+spike    = false
+rolling  = false
+reference = false
+edge      = false
+
+# ─────────────────────────────────────────
+# 조위 (실측)
+# ─────────────────────────────────────────
+[variables.tide_real]
+enable = true
+
+[variables.tide_real.enabled_tests]
+range     = true
+stuck     = true
+attenuated = false     # 신규: 조위 감쇠 탐지 옵션 (조석 주기 고려해 기본 off)
+roc     = false
+spike     = false
+rolling   = true
+reference = true
+edge      = false    # tide_real: 조석 위상 경계 edge 오검출 방지 위해 제외 (2026-06-30)
+
+[variables.tide_real.range]
+min = -200.0
+max =  1300.0
+
+# 신규: 신호 감쇠 옵션 (경험적 임시 기준 — 72h 표준편차 1cm 미만; 조석으로 변동 큼 → 기본 off)
+[variables.tide_real.attenuated]
+window  = "72h"
+min_var = 1.0
+metric  = "std"
+
+[variables.tide_real.stuck]
+[variables.tide_real.stuck.hourly]
+suspect_count = 12
+fail_count    = 36
+
+[variables.tide_real.roc]
+# 조석 주기 급변 허용: 기존 120/200 → 완화
+suspect_per_hour = 150.0
+fail_per_hour    = 300.0
+
+[variables.tide_real.spike]
+suspect = 400.0
+fail    = 700.0
+
+[variables.tide_real.rolling]
+window        = "2160h"
+suspect_sigma = 3.0
+fail_sigma    = 5.0
+min_periods   = 100
+min_std       = 1.0
+
+[variables.tide_real.reference]
+column           = "tide_pre"
+suspect_threshold = 50.0
+fail_threshold    = 150.0
+
+[variables.tide_real.edge]
+n_start = 3
+abs_fail    = 30.0
+abs_suspect = 15.0
+gap_min     = "12h"
+
+[variables.current_speed]
+enable = true
+
+[variables.current_speed.enabled_tests]
+range   = true
+stuck   = true
+roc     = false
+spike   = true
+rolling = false
+edge    = true
+
+[variables.current_speed.stuck]
+[variables.current_speed.stuck.hourly]
+suspect_count = 16
+fail_count    = 24
+
+[variables.current_speed.spike]
+suspect = 50.0
+fail    = 100.0
+
+[variables.current_speed.edge]
+n_start = 3
+abs_fail    = 30.0
+abs_suspect = 15.0
+
+[variables.current_speed.range]
+min = 0.0
+max = 300.0
+
+[variables.current_speed.rolling]
+window        = "2160h"
+suspect_sigma = 3.0
+fail_sigma    = 5.0
+min_periods   = 100
+min_std       = 5.0
+
+# ─────────────────────────────────────────
+# 유향
+# ─────────────────────────────────────────
+[variables.current_dir]
+enable = true
+
+[variables.current_dir.enabled_tests]
+range = true
+stuck = true
+edge  = false
+
+[variables.current_dir.stuck]
+[variables.current_dir.stuck.hourly]
+suspect_count = 16
+fail_count    = 24
+
+[variables.current_dir.range]
+min = 0.0
+max = 360.0
+
+# ─────────────────────────────────────────
+# 유속 벡터 성분 (u)
+# ─────────────────────────────────────────
+[variables.current_u]
+enable = false  # u/v 성분은 QC 제외 (speed/dir로 대체)
+
+[variables.current_u.enabled_tests]
+range        = false
+vector_range = false
+stuck        = true
+vector_stuck = false
+roc          = false
+vector_roc   = false
+spike        = true
+rolling      = false
+edge         = true
+
+[variables.current_u.stuck]
+epsilon = 0.0
+[variables.current_u.stuck.hourly]
+suspect_count = 16
+fail_count    = 24
+
+[variables.current_u.spike]
+suspect = 200.0
+fail    = 250.0
+
+[variables.current_u.edge]
+n_start = 3
+abs_fail    = 30.0
+abs_suspect = 15.0
+
+[variables.current_u.rolling]
+window        = "2160h"
+suspect_sigma = 3.0
+fail_sigma    = 5.0
+min_periods   = 100
+min_std       = 5.0
+
+# ─────────────────────────────────────────
+# 유속 벡터 성분 (v) — u와 동일 구조
+# ─────────────────────────────────────────
+[variables.current_v]
+enable = false  # u/v 성분은 QC 제외 (speed/dir로 대체)
+
+[variables.current_v.enabled_tests]
+range        = false
+vector_range = false
+stuck        = true
+vector_stuck = false
+roc          = false
+vector_roc   = false
+spike        = true
+rolling      = false
+edge         = true
+
+[variables.current_v.stuck]
+epsilon = 0.0
+[variables.current_v.stuck.hourly]
+suspect_count = 16
+fail_count    = 24
+
+[variables.current_v.spike]
+suspect = 200.0
+fail    = 250.0
+
+[variables.current_v.edge]
+n_start = 3
+abs_fail    = 30.0
+abs_suspect = 15.0
+
+[variables.current_v.rolling]
+window        = "2160h"
+suspect_sigma = 3.0
+fail_sigma    = 5.0
+min_periods   = 100
+min_std       = 5.0
+
+# ─────────────────────────────────────────
+# 파고
+# ─────────────────────────────────────────
+[variables.wave_h]
+enable = true
+
+[variables.wave_h.enabled_tests]
+range   = true
+stuck   = true
+roc     = false
+spike   = true
+rolling = false
+edge    = true
+
+[variables.wave_h.range]
+min = 0.0
+max = 20.0
+
+[variables.wave_h.stuck]
+[variables.wave_h.stuck.hourly]
+suspect_count = 24
+fail_count    = 99999
+
+[variables.wave_h.roc]
+suspect_per_hour = 1.5
+fail_per_hour    = 3.0
+
+[variables.wave_h.spike]
+suspect = 3.0
+fail    = 5.0
+
+[variables.wave_h.rolling]
+window        = "2160h"
+suspect_sigma = 3.0
+fail_sigma    = 5.0
+min_periods   = 100
+min_std       = 0.05
+
+[variables.wave_h.edge]
+n_start = 3
+abs_fail    = 2.0
+abs_suspect = 1.0
+
+[variables.air_temp]
+enable = true
+
+[variables.air_temp.enabled_tests]
+range    = true
+seasonal = false
+stuck    = true
+roc      = false
+spike    = true
+rolling  = true
+edge     = true
+
+[variables.air_temp.range]
+min = -20.0
+max = 40.0   # 경험적 임시 기준: 한국 연근해 절대 최고기온 상한 (센서 과열 오류 차단)
+
+[[variables.air_temp.range.seasonal]]
+label  = "spring"
+months = [3, 4, 5]
+min = -10.0
+max = 35.0
+
+[[variables.air_temp.range.seasonal]]
+label  = "summer"
+months = [6, 7, 8]
+min = 5.0
+max = 40.0
+
+[[variables.air_temp.range.seasonal]]
+label  = "autumn"
+months = [9, 10, 11]
+min = -5.0
+max = 35.0   # 경험적 임시 기준: 9월 초가을 열기 고려 (관측 최고 31.3°C 확인)
+
+[[variables.air_temp.range.seasonal]]
+label  = "winter"
+months = [12, 1, 2]
+min = -20.0
+max = 25.0
+
+[variables.air_temp.stuck]
+[variables.air_temp.stuck.hourly]
+suspect_count = 16
+fail_count    = 24
+
+[variables.air_temp.spike]
+suspect = 5.0
+fail    = 8.0
+
+[variables.air_temp.edge]
+n_start = 3
+abs_fail    = 3.0
+abs_suspect = 2.0
+
+[variables.air_temp.rolling]
+window        = "2160h"
+suspect_sigma = 3.0
+fail_sigma    = 5.0
+min_periods   = 100
+min_std       = 1.5
+
+# ─────────────────────────────────────────
+# 습도
+# ─────────────────────────────────────────
+[variables.air_humi]
+enable = true
+
+[variables.air_humi.enabled_tests]
+range   = true
+stuck   = true
+roc     = false
+spike   = false
+rolling = false
+edge    = false
+
+[variables.air_humi.stuck]
+[variables.air_humi.stuck.hourly]
+suspect_count = 12
+fail_count    = 24
+
+[variables.air_humi.range]
+min = 0.0
+max = 100.0
+
+# ─────────────────────────────────────────
+# 기압
+# ─────────────────────────────────────────
+[variables.air_pres]
+enable = true
+
+[variables.air_pres.enabled_tests]
+range   = true
+stuck   = true
+roc     = false
+spike   = true
+rolling = true
+edge    = true
+
+[variables.air_pres.range]
+min = 900.0   # 경험적 임시 기준: 한국 근해 태풍 최저기압 하한 (역대 최저 ~912 hPa, 여유 포함)
+max = 1050.0  # 경험적 임시 기준: 한국 근해 겨울 고기압 상한 (통상 최고 ~1040 hPa)
+
+[variables.air_pres.stuck]
+[variables.air_pres.stuck.hourly]
+suspect_count = 16
+fail_count    = 24
+
+[variables.air_pres.spike]
+suspect = 10.0
+fail    = 20.0
+
+[variables.air_pres.edge]
+n_start = 3
+abs_fail    = 5.0
+abs_suspect = 3.0
+
+[variables.air_pres.rolling]
+window        = "2160h"
+suspect_sigma = 3.0
+fail_sigma    = 5.0
+min_periods   = 100
+min_std       = 3.0
+
+# ─────────────────────────────────────────
+# 풍향
+# ─────────────────────────────────────────
+[variables.wind_dir]
+enable = true
+
+[variables.wind_dir.enabled_tests]
+range       = true
+stuck       = true
+roc         = false
+edge        = false
+consistency = false
+
+[variables.wind_dir.stuck]
+skip_below_col   = "wind_speed"
+skip_below_value = 1.0
+[variables.wind_dir.stuck.hourly]
+suspect_count = 16
+fail_count    = 24
+
+[variables.wind_dir.range]
+min = 0.0
+max = 360.0
+
+[variables.wind_dir.consistency]
+reference_col = "wind_speed"
+propagate_bad = true
+
+# ─────────────────────────────────────────
+# 풍속
+# ─────────────────────────────────────────
+[variables.wind_speed]
+enable = true
+
+[variables.wind_speed.enabled_tests]
+range   = true
+stuck   = true
+roc     = false
+spike   = true
+rolling = false
+edge    = true
+
+[variables.wind_speed.stuck]
+[variables.wind_speed.stuck.hourly]
+suspect_count = 16
+fail_count    = 24
+
+[variables.wind_speed.spike]
+suspect = 30.0
+fail    = 45.0
+
+[variables.wind_speed.edge]
+n_start = 3
+abs_fail    = 5.0
+abs_suspect = 3.0
+
+[variables.wind_speed.range]
+min = 0.0
+max = 75.0
+
+[variables.wind_speed.rolling]
+window        = "2160h"
+suspect_sigma = 3.0
+fail_sigma    = 5.0
+min_periods   = 100
+min_std       = 1.0
+
+# ─────────────────────────────────────────
+# 순간최대풍속
+# ─────────────────────────────────────────
+[variables.wind_gust]
+enable = true
+
+[variables.wind_gust.enabled_tests]
+range       = true
+stuck       = true
+roc         = false
+spike       = true
+rolling     = false 
+edge        = true
+consistency = false
+
+[variables.wind_gust.stuck]
+[variables.wind_gust.stuck.hourly]
+suspect_count = 16
+fail_count    = 24
+
+[variables.wind_gust.spike]
+suspect = 35.0
+fail    = 50.0
+
+[variables.wind_gust.edge]
+n_start = 3
+abs_fail    = 5.0
+abs_suspect = 3.0
+
+[variables.wind_gust.range]
+min = 0.0
+max = 100.0
+
+[variables.wind_gust.rolling]
+window        = "2160h"
+suspect_sigma = 3.0
+fail_sigma    = 5.0
+min_periods   = 100
+min_std       = 1.5
+
+[variables.wind_gust.consistency]
+reference_col            = "wind_speed"
+propagate_bad            = true
+propagate_level          = "suspect"  # wind_speed BAD → wind_gust SUSPECT
+ref_zero_threshold       = 0.5   # wind_speed < 0.5 m/s = 정온
+target_nonzero_threshold = 2.0   # wind_gust > 2.0 m/s = 비정상
+
+# ─────────────────────────────────────────
+# 풍속 벡터 (u, v) — current_u/v와 동일 구조
+# ─────────────────────────────────────────
+[variables.wind_u]
+enable = false  # u/v 성분은 QC 제외 (speed/dir로 대체)
+
+[variables.wind_u.enabled_tests]
+range        = false
+vector_range = false
+stuck        = true
+vector_stuck = false
+roc          = false
+vector_roc   = false
+spike        = true
+rolling      = false
+edge         = true
+
+[variables.wind_u.stuck]
+epsilon = 0.0
+[variables.wind_u.stuck.hourly]
+suspect_count = 16
+fail_count    = 24
+
+[variables.wind_u.spike]
+suspect = 25.0
+fail    = 35.0
+
+[variables.wind_u.edge]
+n_start = 3
+abs_fail    = 5.0
+abs_suspect = 3.0
+
+[variables.wind_u.rolling]
+window        = "2160h"
+suspect_sigma = 3.0
+fail_sigma    = 5.0
+min_periods   = 100
+min_std       = 1.0
+
+[variables.wind_v]
+enable = false  # u/v 성분은 QC 제외 (speed/dir로 대체)
+
+[variables.wind_v.enabled_tests]
+range        = false
+vector_range = false
+stuck        = true
+vector_stuck = false
+roc          = false
+vector_roc   = false
+spike        = true
+rolling      = false
+edge         = true
+
+[variables.wind_v.stuck]
+epsilon = 0.0
+[variables.wind_v.stuck.hourly]
+suspect_count = 16
+fail_count    = 24
+
+[variables.wind_v.spike]
+suspect = 40.0
+fail    = 50.0
+
+[variables.wind_v.edge]
+n_start = 3
+abs_fail    = 5.0
+abs_suspect = 3.0
+
+[variables.wind_v.rolling]
+window        = "2160h"
+suspect_sigma = 3.0
+fail_sigma    = 5.0
+min_periods   = 100
+min_std       = 1.0
