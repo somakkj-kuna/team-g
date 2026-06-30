@@ -2,5 +2,11 @@ submit/
 sample_data/
 sample_data.zip
 
-# 수집 재수집 샌드박스 (server131 collect_test 사본 — API 서비스 키·테스트 데이터 포함, 공개 repo 보호)
-collect_test/
+# 수집 재수집 샌드박스 (collect_test) — 코드는 공개, 키·원시데이터만 제외
+# (아래 주석은 별도 줄에 둘 것 — 패턴 뒤 인라인 주석은 패턴으로 인식됨)
+# 32M 미공개 관측데이터(공개 repo 부적합)
+collect_test/out/
+# API 서비스 키가 든 config
+collect_test/obs/khoa/config/khoa_config.toml
+collect_test/obs/kma/config/kma_config.toml
+collect_test/obs/kma/config/aws_config.toml

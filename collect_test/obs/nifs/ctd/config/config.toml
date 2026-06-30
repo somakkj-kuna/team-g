@@ -1,0 +1,56 @@
+[paths]
+root_dir = "/home/collect/collector/collect/obs/nifs/ctd"
+source_glob = "/data/DATA/OBS/nifs/ctd/{yyyy}/ctd_{yyyy}.csv"
+merge_output_dir = "/data/DATA/OBS/nifs/merge/ctd"
+line_point_info_org_csv = "config/nifs_ctd_line_point_info_org.csv"
+line_point_info_csv = "config/nifs_ctd_line_point_info.csv"
+
+[merge]
+missing_value = "-999"
+dedupe_keys = [
+  "line",
+  "point",
+  "record_time",
+  "depth",
+]
+sort_keys = [
+  "record_time",
+  "line",
+  "point",
+  "depth",
+]
+
+[merge.var_name]
+"해역" = "sea_name"
+"정선" = "line"
+"정점" = "point"
+"위도" = "obs_lat"
+"경도" = "obs_lon"
+"관측일시(KST)" = "record_time"
+"관측수심(m)" = "depth"
+"수온(℃)" = "temp"
+"염분(psu)" = "sal"
+"용존산소(ml/L)" = "DO"
+"인산염인(μmol/L)" = "PO4"
+"아질산질소(μmol/L)" = "NO2"
+"질산질소(μmol/L)" = "NO3"
+"규산규소(μmol/L)" = "SIL"
+"pH" = "pH"
+"투명도(m)" = "Transp"
+"기압(hPa)" = "air_pres"
+
+[var_unit]
+record_time = "KST"
+obs_lat = "degree_north"
+obs_lon = "degree_east"
+depth = "m"
+temp = "degC"
+sal = "psu"
+DO = "ml/L"
+PO4 = "umol/L"
+NO2 = "umol/L"
+NO3 = "umol/L"
+SIL = "umol/L"
+pH = "pH"
+Transp = "m"
+air_pres = "hPa"

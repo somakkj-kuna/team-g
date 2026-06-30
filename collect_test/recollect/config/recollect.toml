@@ -1,0 +1,43 @@
+[settings]
+test_output_root = "/home/collect/collect_test/out/raw"
+collector_root   = "/home/collect/collect_test/obs"
+state_dir        = "/home/collect/collect_test/recollect/state"
+retention_days   = 7
+max_attempts     = 7
+completeness_threshold = 0.9
+
+[datasets.khoa_tidal]
+provider = "khoa"
+dataset  = "tidal"
+cadence_min = 10
+subdir   = "khoa/tidal"
+file_tmpl = "tidal_{yyyymm}.csv"
+script   = "khoa/collect_khoa_obs.sh"
+script_args = ["tidal"]
+
+[datasets.khoa_buoy]
+provider = "khoa"
+dataset  = "buoy"
+cadence_min = 10
+subdir   = "khoa/buoy"
+file_tmpl = "buoy_{yyyymm}.csv"
+script   = "khoa/collect_khoa_obs.sh"
+script_args = ["buoy"]
+
+[datasets.kma_buoy]
+provider = "kma"
+dataset  = "buoy"
+cadence_min = 30
+subdir   = "kma/buoy"
+file_tmpl = "buoy_{yyyymm}.csv"
+script   = "kma/collect_kma_obs.sh"
+script_args = []
+
+[datasets.nifs_buoy]
+provider = "nifs"
+dataset  = "buoy"
+cadence_min = 30
+subdir   = "nifs/buoy"
+file_tmpl = "buoy_{yyyymm}.csv"
+script   = "nifs/collect_nifs_obs.sh"
+script_args = []

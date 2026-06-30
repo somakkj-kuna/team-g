@@ -1,0 +1,17 @@
+[hf_nc]
+raw_root     = "/data/DATA/OBS/raw/khoa/hf"
+prc_root     = "/data/DATA/OBS/prc/hf"
+gshhg_root   = "/home/collect/collector/collect/obs/khoa/config/gshhg"
+station_info = "/home/collect/collector/collect/obs/khoa/config/khoa_station_info.csv"
+
+[hf_nc.common_grid]
+lat_min    = 33.0
+lat_max    = 38.5
+lon_min    = 125.5
+lon_max    = 132.0
+resolution = 0.01
+
+[hf_nc.global_attrs]
+source      = "KHOA HF Radar, OpenAPI (apis.data.go.kr)"
+institution = "Korea Hydrographic and Oceanographic Agency"
+Conventions = "CF-1.8"

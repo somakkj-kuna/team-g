@@ -1,0 +1,36 @@
+[api]
+base_page = "https://www.nifs.go.kr/risa/risa/risaA/actionRisaInfo.do"
+base_api = "https://www.nifs.go.kr/risa/risa/risaA"
+request_timeout = 30
+max_retry = 5
+sleep_seconds = 0.3
+retry_wait_seconds = 1800
+user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+[request]
+req_date_format = "%Y%m%d"
+api_date_format = "%Y-%m-%d"
+areas = ["동해", "남해", "서해"]
+start_time = "00:00"
+end_time = "23:30"
+sort_field = "station"
+sort_order = "asc"
+page_size = 200
+interval_seconds = 0.3
+
+[storage.monthly]
+output_root = "/home/collect/collect_test/out/raw/nifs/buoy"
+dir_layout = "{yyyy}"
+file_pattern = "buoy_{yyyymm}.csv"
+
+[output]
+fields = [
+  "time", "station_id", "station_name_k", "lat", "lon",
+  "sur_temp", "sur_depth_m",
+  "mid_temp", "mid_depth_m",
+  "bot_temp", "bot_depth_m",
+  "station_type", "area_name",
+]
+
+[stations_yaml]
+path = "/data/DATA/OBS/meta/stations/nifs.yaml"

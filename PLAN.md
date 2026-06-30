@@ -1,18 +1,18 @@
 # 해양 현장관측 수집–QC–대시보드 파이프라인 — 프로젝트 플랜 (G팀)
 
 > 팀 공유용 계획서. `git pull`로 최신본 받기.
-> 3축: **① 수집(+재수집) · ② QC(+보간) · ③ 라이브 대시보드**.
+> 3축: **① 수집(+재수집) · ② QC · ③ 라이브 대시보드**.
 > (이 플랜은 팀원이 올린 `qcsrc/`·`QC.md`·`qc_webapp/` 실제 구현과 server131 수집 환경을 반영해 갱신됨)
 
 ## 1. 배경 / 목표
 제공처별 해양 현장관측 자료에 **제공 지연으로 인한 미수집**과 **결측·이상치**가 발생한다. 세 축으로 해결한다.
 - ① **수집·재수집** — server131 수집기로 제공처·정점별 수집, **미수집(날짜/시간) 기록 → 일정기간 후 자동 재수집**
-- ② **자동 QC + 보간** — QC 플래그 생산 → **이상치(BAD)·의심(SUSPECT) 제외 → 보간**으로 분석용 연속 자료 생산
+- ② **자동 QC** — QC 플래그 생산 → **이상치(BAD)·의심(SUSPECT) 제외(플래깅)** 로 분석용 자료 생산
 - ③ **로컬 대시보드** — 수집현황·QC결과를 한눈에(조문원 라이브 가동 중)
 
 ### 전체 흐름
 ```
-server131 수집(+미수집 재수집) → 표준 prc CSV → QC 플래그 → BAD·SUSPECT 제외+보간 → 산출물(flag/final) → 대시보드
+server131 수집(+미수집 재수집) → 표준 prc CSV → QC 플래그 → BAD·SUSPECT 제외 → 산출물(flag/final) → 대시보드
 ```
 
 ## 2. 수집 · 재수집 (server131)
@@ -30,7 +30,7 @@ server131 수집(+미수집 재수집) → 표준 prc CSV → QC 플래그 → B
   채워지면 `resolved`, 한도 초과 시 `escalated`. crontab **자동 재시도** + 운영자 **수동 강제**(`--target --date --force`) 지원.
 - 신규 위치(예정): `monitor/data_check/recollect/`(run 스크립트 · libs · config · `state/ledger` · usage).
 
-## 3. QC + 보간
+## 3. QC
 ### 3-1. 문헌 근거 / 플래그 체계 (개선중)
 - **주 표준 — QARTOD**(U.S. IOOS/NOAA). 보조 — Copernicus Marine In Situ TAC RTQC · 국내 KHOA·NIFS · 이어도 ORS.
 
@@ -43,11 +43,10 @@ server131 수집(+미수집 재수집) → 표준 prc CSV → QC 플래그 → B
 - 병합 원칙: `flag_final = max(severity)`.
 - QC 알고리즘(qcsrc, 개선중) 9종: zero · range · stuck · roc · spike · stat · consistency · cross · edge.
 
-### 3-2. 처리정책 — 제외 후 보간 (변경)
-- QC 플래그로 **BAD(3)·SUSPECT(2)를 분석에서 제외**하고, 제외·결측 지점을 **보간하여 연속 자료를 생산**한다.
-- 보간: 시간 기반 선형 등(장기 갭은 보간 제외/표시). **보간값은 별도 플래그/표식으로 추적**해 원자료와 구분.
-- 산출물: `flag` CSV(전체 플래그) + `final` CSV(GOOD + 보간된 값).
-- > 변경 전: "원칙 플래깅, final=good+suspect 추출" → 변경 후: **BAD·SUSPECT 제외 + 보간**.
+### 3-2. 처리정책 — 제외(플래깅)
+- QC 플래그로 **BAD(3)·SUSPECT(2)를 분석에서 제외**(플래깅)한다.
+- 산출물: `flag` CSV(전체 플래그) + `final` CSV(제외 후 분석용 자료).
+- > 보간(결측·이상치 값 채움)은 이번 범위에서 제외(시간 제약).
 
 ### 참고 링크
 - QARTOD: https://ioos.noaa.gov/project/qartod/
@@ -83,13 +82,12 @@ Python 3 · pandas/numpy · QARTOD 근거(자체 구현) · Plotly · 로컬 htt
 | **M1** 수집현황 | 제공처·정점별 수신시각·지연·결측률·가용률 집계 | 진행 |
 | **M2** 미수집 재수집 | 미수집 대장 기록 + 지연 자동 재수집 파이프라인 | **신설(설계 완료)** |
 | **M3** QC 엔진 | 플래그(1/2/3/9) 생산, 9종 검사 | qcsrc 구현·개선중 |
-| **M4** 처리정책·보간 | BAD·SUSPECT 제외 후 보간, final CSV 생산 | **변경(보간 채택)** |
+| **M4** 처리정책 | BAD·SUSPECT 제외(플래깅), final CSV 생산 | 진행 |
 | **M5** 집계·저장 | 재현가능 산출물(flag/final) 저장 | 진행 |
 | **M6** 대시보드 | 라이브 가동(수집현황·QC·요약·AI·HWPX) | 가동 중 |
 | **M7** 검증·문서·효과 | end-to-end 재현, benchmark 효과측정, README | 진행 |
 
 ## 8. 미해결 / 확인 포인트
-- 보간 방법·장기갭 임계(시간선형 vs 다항·이웃관측 활용), 보간값 플래그 표기 방식.
 - 재수집 재시도 윈도/최대횟수(제공처별 지연 특성), escalated 알림 방식(`MAILTO` 빈 환경 → 로그/대장 표시).
 - consistency·cross 등 다변수 검사의 변수별 활성 매트릭스(QC.md 7절).
 - 대시보드에 미수집·재수집 현황(대장) 연동 여부.
@@ -97,6 +95,6 @@ Python 3 · pandas/numpy · QARTOD 근거(자체 구현) · Plotly · 로컬 htt
 ## 9. 검증 (end-to-end)
 1. 의존성 설치 + `pytest qcsrc/tests` 통과.
 2. server131 수집 → 미수집 탐지 → 대장 기록 → 재수집 백필 → 채움 확인.
-3. QC 실행 → 플래그(1/2/3/9) 부여 → **BAD·SUSPECT 제외 + 보간** → final CSV 생산.
+3. QC 실행 → 플래그(1/2/3/9) 부여 → **BAD·SUSPECT 제외** → final CSV 생산.
 4. benchmark로 주입 이상치가 BAD(3)로 잡히는지(precision/recall/F1).
 5. 라이브 대시보드에서 수집현황·QC 시계열·요약 확인.

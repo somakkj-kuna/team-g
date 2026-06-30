@@ -1,0 +1,1594 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+   
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="author" content="e-연구바다">
+<meta name="keywords" content="e-연구바다, 국립수산과학원">
+<meta name="copyright" content="Copyright © THE SEA OF RESEARCH. All rights reserved.">
+<meta name="description" content="e-연구바다">
+<meta name="subject" content="e-연구바다">
+<!--오픈그래프-->
+<meta property="og:type" content="website">
+<meta property="og:title" content="e-연구바다">
+<meta property="og:description" content="국립수산과학원 e-연구바다">
+<meta property="og:site_name" content="e-연구바다">
+<meta property="og:image" content="https://www.nifs.go.kr/portal/cmmn/images/openGraph.jpg" />
+<meta property="og:url" content="https://www.nifs.go.kr/portal/">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+
+
+
+
+
+
+
+<title>실시간 해양수산환경 관측시스템</title>
+<link rel="icon" type="image/png" href="/risa/cmmn/images/favicon.png">
+
+<link href="/risa/cmmn/css/common.css?ver=" type="text/css" rel="stylesheet">
+<link href="/risa/cmmn/css/default.css?ver=" type="text/css" rel="stylesheet">
+<link href="/risa/cmmn/css/jquery-ui.min.css" type="text/css" rel="stylesheet"><!-- css -->
+<link href="/risa/cmmn/css/bootstrap-clockpicker.css" type="text/css" rel="stylesheet">
+<link href="/risa/cmmn/css/chosen.css" type="text/css" rel="stylesheet">
+<link href="/risa/cmmn/grid/css/AUIGrid_style.css?ver=" type="text/css" rel="stylesheet">
+<link href="/risa/cmmn/css/style.css?ver=" type="text/css" rel="stylesheet">
+<link href="/risa/cmmn/css/developer_style.css?ver=" type="text/css" rel="stylesheet"> <!-- 디자인 소스 안겹치기위해서 사용함-->
+
+<style>
+   /*첨부터 안보이거나 보이게 처리 위함*/
+   .authEdt{
+    
+      display:none !important;
+    
+    }
+   .authOptr{
+    
+      display:none !important;
+    
+    }
+
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- JSTL 변수 인식 엔터 정보 설정 -->
+
+
+
+
+ 
+<link href="/risa/cmmn/css/sub.css?ver=" type="text/css" rel="stylesheet">
+
+</head>
+
+<style type="text/css">
+	@media screen and (max-width: 1199px) {
+	    #pcInfo {
+	        display: none;
+	    }
+	}
+	@media screen and (min-width: 1199px) {
+	    #moInfo {
+	        display: none;
+	    }
+	}
+</style>
+<body>
+	<!-- wrap -->
+	<div id="wrap">
+		<!-- header -->
+		
+
+
+
+
+
+
+
+
+       <!-- sitemap -->
+        <div id="sitemap" class="modal">
+            <div class="sitemap-wrap">
+                
+                
+                <section>
+                    <h2>시스템소개</h2>
+                    
+                    <div class="menu"		>
+                       
+                          
+                          
+                          <article>
+								<h3>
+								  <a href="/risa/pcon0000413/systA/actionConts.do"
+								     class="lvl2-link">
+								     사업 개요
+								  </a>
+								</h3>
+                              <ul>
+                                  
+                              </ul>
+                          </article>
+                          
+                          
+                       
+                          
+                          
+                          <article>
+								<h3>
+								  <a href="/risa/pcon0000414/systA/actionConts.do"
+								     class="lvl2-link">
+								     연혁
+								  </a>
+								</h3>
+                              <ul>
+                                  
+                              </ul>
+                          </article>
+                          
+                          
+                       
+                          
+                          
+                          <article>
+								<h3>
+								  <a href="/risa/pcon0000415/systA/actionConts.do"
+								     class="lvl2-link">
+								     사업방향 및 QC
+								  </a>
+								</h3>
+                              <ul>
+                                  
+                              </ul>
+                          </article>
+                          
+                          
+                       
+                    </div>
+                </section>
+                
+                
+                
+                <section>
+                    <h2>관측데이터</h2>
+                    
+                    <div class="menu"		>
+                       
+                          
+                          
+                          <article>
+								<h3>
+								  <a href="/risa/risa/risaA/actionRisaInfo.do"
+								     class="lvl2-link">
+								     실시간 관측정보 검색
+								  </a>
+								</h3>
+                              <ul>
+                                  
+                              </ul>
+                          </article>
+                          
+                          
+                       
+                          
+                          
+                          <article>
+								<h3>
+								  <a href="/risa/risa/risaB/actionRisaStats.do"
+								     class="lvl2-link">
+								     관측정보 통계
+								  </a>
+								</h3>
+                              <ul>
+                                  
+                              </ul>
+                          </article>
+                          
+                          
+                       
+                          
+                          
+                          <article>
+								<h3>
+								  <a href="/risa/risa/risaC/actionRisaStation.do"
+								     class="lvl2-link">
+								     관측소 검색
+								  </a>
+								</h3>
+                              <ul>
+                                  
+                              </ul>
+                          </article>
+                          
+                          
+                       
+                          
+                          
+                          <article>
+								<h3>
+								  <a href="/risa/risa/risaD/actionRisaPastDown.do"
+								     class="lvl2-link">
+								     과거 관측정보 다운로드
+								  </a>
+								</h3>
+                              <ul>
+                                  
+                              </ul>
+                          </article>
+                          
+                          
+                       
+                    </div>
+                </section>
+                
+                
+                
+                <section>
+                    <h2>지도서비스</h2>
+                    
+                    <div class="menu"		>
+                       
+                          
+                          
+                           <!-- 팝업 -->
+                          <article class="full">
+                          <h3><a href="/risa/risa/risaE/actionRisaMap.do" target="_black" title="새창열기" class="window">
+							    지도서비스</a>
+						  </h3>
+                          </article>
+                           
+                       
+                    </div>
+                </section>
+                
+                
+                
+                <section>
+                    <h2>알림톡(문자)서비스</h2>
+                    
+                    <div class="menu"		>
+                       
+                          
+                          
+                          <article>
+								<h3>
+								  <a href="/risa/risa/risaF/actionRisaApply.do"
+								     class="lvl2-link">
+								     신청
+								  </a>
+								</h3>
+                              <ul>
+                                  
+                              </ul>
+                          </article>
+                          
+                          
+                       
+                          
+                          
+                          <article>
+								<h3>
+								  <a href="/risa/risa/risaG/actionRisaCancle.do"
+								     class="lvl2-link">
+								     해지
+								  </a>
+								</h3>
+                              <ul>
+                                  
+                              </ul>
+                          </article>
+                          
+                          
+                       
+                    </div>
+                </section>
+                
+                
+                
+                
+                    <section>
+                    <h2>즐겨찾기</h2>
+				        <div class="menu">
+				        <article class="full">
+				            <a href="/risa/risa/risaZ/actionRisaBookMark.do">
+							<h3>즐겨찾기</h3>
+							</a>
+				            </article>
+				        </div>
+				    </section>
+            </div>
+            <a href="javascript:;" class="close" >
+                <span class="hidden">닫기</span>
+            </a>
+        </div>
+        <!-- //sitemap -->
+
+      <div class="nav-background"></div>
+        <div class="skip">
+            <dl>
+                <dt class="skipH">바로가기 메뉴</dt>
+                <dd>
+                    <a class="skipNavi" href="#gnb">주메뉴 바로가기</a>
+                </dd>
+                <dd>
+                    <a class="skipNavi" href="#contents">본문 바로가기</a>
+                </dd>
+                <dd>
+                    <a class="skipNavi" href="#footer">하단 바로가기</a>
+                </dd>
+            </dl>
+        </div>
+        <div class="header_wrap">
+            <header id="header">
+                <h1 class="logo" onclick="location.href='/risa/main.do'"><span class="hide">국립수산과학원 실시간해양수산환경 관측시스템</span></h1>
+                <div id="gnb">
+                    <div id="nav" class="menu">
+                        <div class="nav-head">
+                            <h2>사이트맵</h2>
+                            <a href="javascript:;" class="menu-close">
+                                <span class="hide">닫기</span>
+                            </a>
+                        </div>
+                        <ul class="nav-tabs">
+                            
+                              
+                              <li ><a href="#navtab1">시스템소개</a></li>
+                            
+                              
+                              <li class="on"><a href="#navtab2">관측데이터</a></li>
+                            
+                              
+                              <li ><a href="#navtab3">지도서비스</a></li>
+                            
+                              
+                              <li ><a href="#navtab4">알림톡(문자)서비스</a></li>
+                            
+                              
+                              <li ><a href="#navtab5">나의 즐겨찾기</a></li>
+                            
+                        </ul>
+                        <ul class="nav-menu">
+                            
+                            
+                            
+                            
+						<li id="navtab1"
+						    class="wrap"
+						    >
+                           
+                           
+                            <a href="javascript:;" class="item">시스템소개</a>
+                           
+                                <div class="submenu emt1">
+                                    <div class="submenu-area">
+                                        <div class="submenu-title">
+                                            시스템소개
+                                            <span>
+                                                
+												    
+												    	국립수산과학원에서 운영하는<br>해양수산환경 관측 시스템에<br>대해 알려드립니다.
+												    
+												    
+												    
+												    
+												    
+												    
+												    
+												    
+												
+                                            </span>
+                                        </div>
+                                         <!-- 2단계 -->
+                                        <ul class="submenu-wrap">
+                                            
+                                            
+                                            
+											<li class="wrap ">
+                                                <div class="st"><a href="/risa/pcon0000413/systA/actionConts.do" >사업 개요</a></div>
+                                                
+                                            </li>
+                                            
+                                            
+                                            
+                                            
+                                            
+											<li class="wrap ">
+                                                <div class="st"><a href="/risa/pcon0000414/systA/actionConts.do" >연혁</a></div>
+                                                
+                                            </li>
+                                            
+                                            
+                                            
+                                            
+                                            
+											<li class="wrap ">
+                                                <div class="st"><a href="/risa/pcon0000415/systA/actionConts.do" >사업방향 및 QC</a></div>
+                                                
+                                            </li>
+                                            
+                                            
+                                            
+                                        </ul>
+                                        
+                                    </div>
+                                </div>
+                            </li>
+                            
+                            
+                            
+                            
+                            
+						<li id="navtab2"
+						    class="wrap"
+						    
+						        style="display: block;"
+						    >
+                           
+                           
+                            <a href="javascript:;" class="item">관측데이터</a>
+                           
+                                <div class="submenu emt2">
+                                    <div class="submenu-area">
+                                        <div class="submenu-title">
+                                            관측데이터
+                                            <span>
+                                                
+												    
+												    
+												    	국립수산과학원이 제공하는<br>다양한 관측정보를 검색하고<br>다운받을 수 있습니다.
+												    
+												    
+												    
+												    
+												    
+												    
+												    
+												
+                                            </span>
+                                        </div>
+                                         <!-- 2단계 -->
+                                        <ul class="submenu-wrap">
+                                            
+                                            
+                                            
+											<li class="wrap on">
+                                                <div class="st"><a href="/risa/risa/risaA/actionRisaInfo.do" >실시간 관측정보 검색</a></div>
+                                                
+                                            </li>
+                                            
+                                            
+                                            
+                                            
+                                            
+											<li class="wrap ">
+                                                <div class="st"><a href="/risa/risa/risaB/actionRisaStats.do" >관측정보 통계</a></div>
+                                                
+                                            </li>
+                                            
+                                            
+                                            
+                                            
+                                            
+											<li class="wrap ">
+                                                <div class="st"><a href="/risa/risa/risaC/actionRisaStation.do" >관측소 검색</a></div>
+                                                
+                                            </li>
+                                            
+                                            
+                                            
+                                            
+                                            
+											<li class="wrap ">
+                                                <div class="st"><a href="/risa/risa/risaD/actionRisaPastDown.do" >과거 관측정보 다운로드</a></div>
+                                                
+                                            </li>
+                                            
+                                            
+                                            
+                                        </ul>
+                                        
+                                    </div>
+                                </div>
+                            </li>
+                            
+                            
+                            
+                            
+                            
+						<li id="navtab3"
+						    class="wrap"
+						    >
+                           
+                           
+                            <a href="javascript:;" class="item">지도서비스</a>
+                           
+                                <div class="submenu emt3">
+                                    <div class="submenu-area">
+                                        <div class="submenu-title">
+                                            지도서비스
+                                            <span>
+                                                
+												    
+												    
+												    
+												    	국립수산과학원이 관리하는<br>지역별 관측소와 실시간 관측정보를<br>지도로 확인하실 수 있습니다.
+												    
+												    
+												    
+												    
+												    
+												    
+												
+                                            </span>
+                                        </div>
+                                         <!-- 2단계 -->
+                                        <ul class="submenu-wrap">
+                                            
+                                            
+                                            
+                                            
+                                            <li class="wrap">
+												<div class="st">
+                                                	<a href="/risa/risa/risaE/actionRisaMap.do
+                                                	" onclick="window.open(this.href,
+                                                	'_blank ',
+                                                	''); return false;"
+                                                	title="새창열기" class="window" 
+                                                	>
+                                                	지도서비스</a>
+                                                </div>
+                                            </li>
+                                            
+                                            
+                                        </ul>
+                                        
+                                    </div>
+                                </div>
+                            </li>
+                            
+                            
+                            
+                            
+                            
+						<li id="navtab4"
+						    class="wrap"
+						    >
+                           
+                           
+                            <a href="javascript:;" class="item">알림톡(문자)서비스</a>
+                           
+                                <div class="submenu emt4">
+                                    <div class="submenu-area">
+                                        <div class="submenu-title">
+                                            알림톡(문자)서비스
+                                            <span>
+                                                
+												    
+												    
+												    
+												    
+												    	알림톡 서비스 신청을 통하여<br>실시간 해양수산환경 관측<br>최신 정보를 받아보세요.
+												    
+												    
+												    
+												    
+												    
+												
+                                            </span>
+                                        </div>
+                                         <!-- 2단계 -->
+                                        <ul class="submenu-wrap">
+                                            
+                                            
+                                            
+											<li class="wrap ">
+                                                <div class="st"><a href="/risa/risa/risaF/actionRisaApply.do" >신청</a></div>
+                                                
+                                            </li>
+                                            
+                                            
+                                            
+                                            
+                                            
+											<li class="wrap ">
+                                                <div class="st"><a href="/risa/risa/risaG/actionRisaCancle.do" >해지</a></div>
+                                                
+                                            </li>
+                                            
+                                            
+                                            
+                                        </ul>
+                                        
+                                    </div>
+                                </div>
+                            </li>
+                            
+                            
+                            
+                            
+                        </ul>
+                    </div>
+                </div>
+               <div class="util">
+                    <a href="/risa/risa/risaZ/actionRisaBookMark.do" class="set-btn"><span class="hidden">즐겨찾기</span></a>
+                    
+                    
+                    <!-- <a href="/risa/login.do" title="로그인" class="navlog"><span class="hide">로그인</span></a>-->
+                    
+                    <button class="m-sel" type="button"><span class="hide">사이트맵</span></button>
+                    <button class="navbtn" type="button"><span class="hide">사이트맵</span></button>
+                </div>
+                <div class="navsch_box">
+                    <div class="navsch_in">
+                        <label for="surfWord2" class="hide">검색어를 입력해 보세요.</label>
+                        <input type="text" id="surfWord2" name="surfWord2" placeholder="검색어를 입력해 보세요." onkeypress="if(event.keyCode == 13) {fnIntegratedSearch('N');}">
+                        <button type="submit" title="검색" onclick="javscript:fnIntegratedSearch('N');"><span class="hide">검색</span></button>
+                    </div>
+                </div>
+            </header>
+             <!-- 서브탑 표현 여부 -->
+               
+	           	   
+               
+	           	   
+	                   
+	               
+               
+	           	   
+               
+	           	   
+               
+	           	   
+               
+               <!--<section class="sub_top cate_02">
+                   <h2 class="tit_h2">관측데이터</h2>
+                   <ul class="path" id="location-bar">
+                       <li class="home"><a href="/risa/main.do"><img src="/risa/cmmn/images/ic_home_white.png" alt="홈으로" /></a></li>
+                       <li><a href="javascript:;">관측데이터</a>
+                           <ul class="drop-list">
+                               
+                               <li><a href="/risa/pcon0000413/systA/actionConts.do" >시스템소개</a></li>
+                               
+                               <li><a href="/risa/risa/risaA/actionRisaInfo.do" >관측데이터</a></li>
+                               
+                               <li><a href="/risa/risa/risaE/actionRisaMap.do" >지도서비스</a></li>
+                               
+                               <li><a href="/risa/risa/risaF/actionRisaApply.do" >알림톡(문자)서비스</a></li>
+                               
+                               <li><a href="/risa/risa/risaZ/actionRisaBookMark.do" >나의 즐겨찾기</a></li>
+                               
+                           </ul>
+                       </li>
+                       <li><a href="javascript:;">실시간 관측정보 검색</a>
+                           <ul class="drop-list">
+                               
+                               <li><a href="/risa/risa/risaA/actionRisaInfo.do" >실시간 관측정보 검색</a></li>
+                               
+                               <li><a href="/risa/risa/risaB/actionRisaStats.do" >관측정보 통계</a></li>
+                               
+                               <li><a href="/risa/risa/risaC/actionRisaStation.do" >관측소 검색</a></li>
+                               
+                               <li><a href="/risa/risa/risaD/actionRisaPastDown.do" >과거 관측정보 다운로드</a></li>
+                               
+                           </ul>
+                       </li>
+                       
+                       
+                       
+                       
+                   </ul>
+               </section>-->
+               <article id="cssmenu">
+                   
+                      <!-- 등록된 메뉴 일때 -->
+                     
+                       
+                       <h2 class="menu_title">관측데이터</h2>
+                       <ul>
+                         
+                         
+                         
+                         <li class='  open'>
+                            <a href='/risa/risa/risaA/actionRisaInfo.do'   ><span>실시간 관측정보 검색</span></a>
+                            
+                         </li>
+                         
+                         
+                         
+                         <li class='  '>
+                            <a href='/risa/risa/risaB/actionRisaStats.do'   ><span>관측정보 통계</span></a>
+                            
+                         </li>
+                         
+                         
+                         
+                         <li class='  '>
+                            <a href='/risa/risa/risaC/actionRisaStation.do'   ><span>관측소 검색</span></a>
+                            
+                         </li>
+                         
+                         
+                         
+                         <li class='  '>
+                            <a href='/risa/risa/risaD/actionRisaPastDown.do'   ><span>과거 관측정보 다운로드</span></a>
+                            
+                         </li>
+                         
+                     </ul>
+                     
+                   
+               </article>
+            
+        </div>
+
+
+<script>
+//문자서비스
+function openKmcis()
+{
+     let param = {};
+     let plusInfo = {};
+     plusInfo.retUrl = '/risa/terms.do';
+     plusInfo.retTarget = "opener";
+
+     param.plusInfo = encodeURIComponent(JSON.stringify(plusInfo));
+     window.open('/risa/kmcis/actionKmcisRequest.do?plusInfo='+encodeURIComponent(JSON.stringify(plusInfo)), 'kmcis',  'width=425, height=550, resizable=0, scrollbars=no, status=0, titlebar=0, toolbar=0, left=435, top=250');
+     return false;
+}
+
+function closeKmcis()
+{
+     let param = {};
+     let plusInfo = {};
+     plusInfo.retUrl = '/risa/smsServicestop.do';
+     plusInfo.retTarget = "opener";
+
+     param.plusInfo = encodeURIComponent(JSON.stringify(plusInfo));
+     window.open('/risa/kmcis/actionKmcisRequest.do?plusInfo='+encodeURIComponent(JSON.stringify(plusInfo)), 'kmcis',  'width=425, height=550, resizable=0, scrollbars=no, status=0, titlebar=0, toolbar=0, left=435, top=250');
+     return false;
+}
+document.addEventListener("DOMContentLoaded", function() {
+
+    // 1) 신청 링크 대체
+    document.querySelectorAll("a[href$='risa/risaF/actionRisaApply.do']").forEach(function(a){
+        a.addEventListener('click', function(e){
+            e.preventDefault(); // 원래 링크 이동 막기
+            if (typeof openKmcis === 'function') {
+                openKmcis();
+            } else {
+                alert("openKmcis 함수를 찾을 수 없습니다.");
+            }
+        });
+        a.href = "javascript:void(0);"; // 혹시 모를 href 실행 방지
+    });
+
+    // 2) 해지 링크 대체
+    document.querySelectorAll("a[href$='risa/risaG/actionRisaCancle.do']").forEach(function(a){
+        a.addEventListener('click', function(e){
+            e.preventDefault();
+            if (typeof closeKmcis === 'function') {
+                closeKmcis();
+            } else {
+                alert("closeKmcis 함수를 찾을 수 없습니다.");
+            }
+        });
+        a.href = "javascript:void(0);";
+    });
+});
+</script>
+
+		<!-- sub_content-->
+		<main id="container">
+			<div class="contents_wrap" style="min-height: 421px;">
+				<!--상세보기,등록 등 필요시  param 설정 -->
+				
+
+
+
+	<!-- 페이지경로(필요할 경우 살리고 링크 적용) 
+	<ul class="path" id="location-bar">
+        <li class="home"><a href="#" title="메인"><img src="/cmmn/images/ic_home.png" alt=""></a></li>
+        <li><a href="#">양식연구</a></li>
+        <li><a href="#">수산식물품종보호</a></li>
+    </ul> -->
+   <section class="contents_top">
+       <h3 class="tit_h3">실시간 관측정보 검색</h3>
+       
+       <div class="con_util">
+           <div class="sns">
+             <button type="button" class="share"><span class="hide">공유</span></button>
+             <div class="open_share" id="share">
+                 <div class="share-content">
+                     <div class="list">
+                       <a href="#" class="facebook" title="새창 열림"><span class="hidden">페이스북</span></a>
+                       <a href="#" class="twitter" title="새창 열림"><span class="hidden">X</span></a>
+                       <a href="#" class="blog" title="새창 열림"><span class="hidden">블로그</span></a>
+                       <a href="#" class="kakao" title="새창 열림"><span class="hidden">카카오스토리</span></a>
+                       <a href="#" class="band" title="새창 열림"><span class="hidden">네이버밴드</span></a>
+                       <a href="#" class="url" title="새창 열림"><span class="hidden">url복사</span></a>
+                       <a href="#" class="close_share"><span class="hide">닫기</span></a>
+                     </div>
+                 </div>
+              </div>
+          </div>
+          <button type="button" class="print"><span class="hide">프린트</span></button>
+       </div>
+   </section>
+				
+				<div id="contents">
+				<p class="txt_red txtL txt_bold" id = "moInfo" style="font-size: clamp(10px, 3.5vw, 20px);">
+                ※ 실시간 관측자료로 최종적인 품질관리는 적용되지 않았습니다.
+                </p>
+					<!-- search -->
+					<form id="schFrm">
+						<div class="wrap_gray btr_wrap">
+							<div class="btr_left">
+								<div class="filter_wrap ver_left">
+									<dl class="input_wrap w30">
+										<dt class="input_tit">해역</dt>
+										<dd>
+											<label for="obsrvnGroupNm" class="hidden">해역을 선택하여 주세요.</label>
+											<select name="obsrvnGroupNm" id="obsrvnGroupNm" class="select" style="width: 150px;">
+												<option value="X">해역선택</option>
+												<option value="E">동해</option>
+												<option value="S">남해</option>
+												<option value="W">서해</option>
+											</select>
+										</dd>
+									</dl>
+									<dl class="input_wrap w30">
+										<dt class="input_tit">관측소명</dt>
+										<dd>
+											<label for="obsvtrCd" class="hidden">관측소를 선택하여 주세요.</label>
+											<select name="obsvtrCd" id="obsvtrCd" class="select" style="width: 180px;">
+												<option value="X">관측소선택</option>
+											</select>
+										</dd>
+									</dl>
+									<dl class="input_wrap w30">
+										<dt class="input_tit">정렬순서</dt>
+										<dd>
+											<label for="ord" class="hidden">정렬 기준을 선택하여 주세요.</label>
+											<select name="ord" id="ord" class="select" style="width: 150px;">
+												<option value="1">관측소</option>
+												<option value="2">관측일시</option>
+											</select>
+											<label for="ordType" class="hidden">정렬 순서를 선택하여 주세요.</label>
+											<select name="ordType" id="ordType" class="select" style="width: 150px;">
+												<option value="A">오름차순</option>
+												<option value="D">내림차순</option>
+											</select>
+										</dd>
+									</dl>
+								</div>
+								<div class="filter_wrap ver_left mt10">
+									<dl class="input_wrap w100p">
+										<dt class="input_tit">관측일시</dt>
+										<dd class="mo_sep">
+											<label for="obsFrom" class="hidden">관측시작일</label>
+											<input type="text" data-type="date" id="obsFrom" data-date_end="obsTo" class="input cal" value="2026-04-01">
+											<label for="obsTo" class="hidden">관측종료일</label>~
+											<input type="text" data-type="date" id="obsTo" data-date_begin="obsFrom" class="input cal" value="2026-04-01">
+
+											<div class="input_wrap2">
+												<input type="radio" name="rst-sel" id="rst-sel01" class="radio" onclick="javascript:setDate(1,0);" checked><label for="rst-sel01">오늘</label>
+												<input type="radio" name="rst-sel" id="rst-sel02" class="radio" onclick="javascript:setDate(1,1);"><label for="rst-sel02">하루</label>
+												<input type="radio" name="rst-sel" id="rst-sel03" class="radio" onclick="javascript:setDate(1,7);"><label for="rst-sel03">일주일</label>
+												<input type="radio" name="rst-sel" id="rst-sel04" class="radio" onclick="javascript:setDate(2,1);"><label for="rst-sel04">한달</label>
+	                                        </div>
+										</dd>
+									</dl>
+								</div>
+								<div class="filter_wrap ver_left mt10">
+									<dl class="input_wrap w100p">
+										<dt class="input_tit">관측시간</dt>
+										<dd class="mo_sep">
+											<label for="obsTimeFrom" class="hidden">관측시작시간</label>
+											<select name="obsTimeFrom" id="obsTimeFrom" class="select" style="width: 100px;" disabled>
+												
+						                            <option value="0000" >00:00</option>
+						                        
+						                            <option value="0030" >00:30</option>
+						                        
+						                            <option value="0100" >01:00</option>
+						                        
+						                            <option value="0130" >01:30</option>
+						                        
+						                            <option value="0200" >02:00</option>
+						                        
+						                            <option value="0230" >02:30</option>
+						                        
+						                            <option value="0300" >03:00</option>
+						                        
+						                            <option value="0330" >03:30</option>
+						                        
+						                            <option value="0400" >04:00</option>
+						                        
+						                            <option value="0430" >04:30</option>
+						                        
+						                            <option value="0500" >05:00</option>
+						                        
+						                            <option value="0530" >05:30</option>
+						                        
+						                            <option value="0600" >06:00</option>
+						                        
+						                            <option value="0630" >06:30</option>
+						                        
+						                            <option value="0700" >07:00</option>
+						                        
+						                            <option value="0730" >07:30</option>
+						                        
+						                            <option value="0800" >08:00</option>
+						                        
+						                            <option value="0830" >08:30</option>
+						                        
+						                            <option value="0900" >09:00</option>
+						                        
+						                            <option value="0930" >09:30</option>
+						                        
+						                            <option value="1000" >10:00</option>
+						                        
+						                            <option value="1030" >10:30</option>
+						                        
+						                            <option value="1100" >11:00</option>
+						                        
+						                            <option value="1130" >11:30</option>
+						                        
+						                            <option value="1200" >12:00</option>
+						                        
+						                            <option value="1230" >12:30</option>
+						                        
+						                            <option value="1300" >13:00</option>
+						                        
+						                            <option value="1330" >13:30</option>
+						                        
+						                            <option value="1400" >14:00</option>
+						                        
+						                            <option value="1430" >14:30</option>
+						                        
+						                            <option value="1500" >15:00</option>
+						                        
+						                            <option value="1530" >15:30</option>
+						                        
+						                            <option value="1600" >16:00</option>
+						                        
+						                            <option value="1630" >16:30</option>
+						                        
+						                            <option value="1700" >17:00</option>
+						                        
+						                            <option value="1730" >17:30</option>
+						                        
+						                            <option value="1800" >18:00</option>
+						                        
+						                            <option value="1830" >18:30</option>
+						                        
+						                            <option value="1900" >19:00</option>
+						                        
+						                            <option value="1930" >19:30</option>
+						                        
+						                            <option value="2000" >20:00</option>
+						                        
+						                            <option value="2030" >20:30</option>
+						                        
+						                            <option value="2100" >21:00</option>
+						                        
+						                            <option value="2130" >21:30</option>
+						                        
+						                            <option value="2200" >22:00</option>
+						                        
+						                            <option value="2230" >22:30</option>
+						                        
+						                            <option value="2300" >23:00</option>
+						                        
+						                            <option value="2330" >23:30</option>
+						                        
+											</select>~
+											<label for="obsTimeTo" class="hidden">관측종료시간</label>
+											<select name="obsTimeTo" id="obsTimeTo" class="select" style="width: 100px;" disabled>
+												
+						                            <option value="0000"   >00:00</option>
+						                        
+						                            <option value="0030"   >00:30</option>
+						                        
+						                            <option value="0100"   >01:00</option>
+						                        
+						                            <option value="0130"   >01:30</option>
+						                        
+						                            <option value="0200"   >02:00</option>
+						                        
+						                            <option value="0230"   >02:30</option>
+						                        
+						                            <option value="0300"   >03:00</option>
+						                        
+						                            <option value="0330"   >03:30</option>
+						                        
+						                            <option value="0400"   >04:00</option>
+						                        
+						                            <option value="0430"   >04:30</option>
+						                        
+						                            <option value="0500"   >05:00</option>
+						                        
+						                            <option value="0530"   >05:30</option>
+						                        
+						                            <option value="0600"   >06:00</option>
+						                        
+						                            <option value="0630"   >06:30</option>
+						                        
+						                            <option value="0700"   >07:00</option>
+						                        
+						                            <option value="0730"   >07:30</option>
+						                        
+						                            <option value="0800"   >08:00</option>
+						                        
+						                            <option value="0830"   >08:30</option>
+						                        
+						                            <option value="0900"   >09:00</option>
+						                        
+						                            <option value="0930"   >09:30</option>
+						                        
+						                            <option value="1000"   >10:00</option>
+						                        
+						                            <option value="1030"   >10:30</option>
+						                        
+						                            <option value="1100"   >11:00</option>
+						                        
+						                            <option value="1130"   >11:30</option>
+						                        
+						                            <option value="1200"   >12:00</option>
+						                        
+						                            <option value="1230"   >12:30</option>
+						                        
+						                            <option value="1300"   >13:00</option>
+						                        
+						                            <option value="1330"   >13:30</option>
+						                        
+						                            <option value="1400"   >14:00</option>
+						                        
+						                            <option value="1430"   >14:30</option>
+						                        
+						                            <option value="1500"   >15:00</option>
+						                        
+						                            <option value="1530"   >15:30</option>
+						                        
+						                            <option value="1600"   >16:00</option>
+						                        
+						                            <option value="1630"   >16:30</option>
+						                        
+						                            <option value="1700"   >17:00</option>
+						                        
+						                            <option value="1730"   >17:30</option>
+						                        
+						                            <option value="1800"   >18:00</option>
+						                        
+						                            <option value="1830"   >18:30</option>
+						                        
+						                            <option value="1900"   >19:00</option>
+						                        
+						                            <option value="1930"   >19:30</option>
+						                        
+						                            <option value="2000"   >20:00</option>
+						                        
+						                            <option value="2030"   >20:30</option>
+						                        
+						                            <option value="2100"   >21:00</option>
+						                        
+						                            <option value="2130"   >21:30</option>
+						                        
+						                            <option value="2200"   >22:00</option>
+						                        
+						                            <option value="2230"   >22:30</option>
+						                        
+						                            <option value="2300"   >23:00</option>
+						                        
+						                            <option value="2330"  selected >23:30</option>
+						                        
+											</select>
+											<input type="checkbox" id="obsTimeDefault" class="checkbox"><label for="obsTimeDefault"> 사용자 지정</label>
+										</dd>
+									</dl>
+								</div>
+							</div>
+							<div class="btn_wrap btr_right">
+								<button type="button" class="btn_navy btn_search" id="schBtn">검색</button>
+							</div>
+						</div>
+					</form>
+					<!-- search -->
+					
+					 <p class="txt_red txtL txt_bold" id = "pcInfo">
+		             ※ 실시간 관측자료로 최종적인 품질관리는 적용되지 않았습니다.
+		             </p>
+					<!-- button -->
+					<div class="tb_top mt10">
+						<div class="tb_count">
+							총 <strong id="allCntView"></strong>건
+						</div>
+						<div>
+							<button type="button" class="btn_down btn_white btn_mid" id="textBtn">텍스트저장</button>
+							<button type="button" class="btn_down btn_excel btn_mid" id="excelBtn">엑셀저장</button>
+						</div>
+					</div>
+					<!-- button -->
+
+					<!-- List -->
+					<div class="mt10 tb_scroll">
+						<div id="StdGrid" style="height: 630px; min-width:1000px;"></div>
+					</div>
+					<!-- List -->
+
+					</div>
+
+				</div>
+		</main>
+		
+
+
+
+
+
+
+
+<footer id="footer">
+	<!-- <a href="javascript:;" id="scroll-top">TOP</a> -->
+    <div class="footer-in">
+        <div class="footer-left">
+            <ul class="copy-util">
+                <li><a href="https://nifs.go.kr/contents/actionContentsCons0117.do" title="새창열기" target="_blank" class="txt_blue">개인정보처리방침</a></li>
+                <li><a href="https://nifs.go.kr/contents/actionContentsCons0001.do" title="새창열기" target="_blank">저작권 정책</a></li>
+            </ul>
+            <div class="copy1">(46083) 부산광역시 기장군 기장읍 기장해안로 216 국립수산과학원  ｜  대표전화 : 051-720-2114</div>
+            <div class="copy2">Copyright Ⓒ THE SEA OF RESEARCH, All rights reserved.</div>
+        </div>
+        <div class="footer-right">
+            <img src="/risa/cmmn/images/copy_logo.png" alt="국립수산과학원로고" />
+        </div>
+    </div>
+</footer>
+
+
+
+	</div>
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- js -->
+<script src="/risa/cmmn/js/jquery-3.6.0.min.js"></script>
+<!-- local -->
+<script src="/risa/cmmn/css/jquery-ui/jquery-ui.js"></script>
+<!-- prod -->
+
+<script src="/risa/cmmn/js/jquery.form.min.js"></script>
+<script src="/risa/cmmn/js/jquery.validate.min.js"></script>
+<script src="/risa/cmmn/js/jquery-clockpicker.min.js"></script>
+<script src="/risa/cmmn/js/jquery.mtz.monthpicker.js"></script>
+<script src="/risa/cmmn/js/jquery.fileDownload.js"></script>
+<script src="/risa/cmmn/js/chosen.jquery.js"></script>
+<script src="/risa/cmmn/js/xlsx.bundle.js"></script>
+<script src="/risa/cmmn/js/common.js"></script>
+
+
+<script src="/risa/cmmn/js/sub_common.js"></script>
+<script src="/risa/cmmn/js/left_menu.js"></script>
+
+
+<script src='/risa/cmmn/grid/prod/AUIGridLicense.js'></script>
+<script src='/risa/cmmn/grid/prod/AUIGrid.js'></script>
+<script src='/risa/cmmn/grid/FileSaver.min.js'></script>
+
+<!-- 초기스크립트 -->
+<script src="/risa/cmmn/js/lpAuiGrid.js?ver="></script>
+<script src="/risa/cmmn/js/lpCom.js?ver="></script>
+
+<script>
+lpCom.contextPath = "/risa";
+$(function(){
+    am4core.addLicense("CH125366347");
+    // 편집,메뉴관리 권한 버튼 자동 숨김,표현 처리
+    
+        $(".authEdt").remove();
+    
+    
+        $(".authOptr").remove();
+    
+
+   $(".modal .close").click(function() {
+     $(".modal").fadeOut(100);
+   });
+
+   //팝업창 닫기 이벤트 자동설정
+    $("#popupClose").click(function(e) {
+        window.close();
+    });
+
+    //모달창 닫기 이벤트 자동설정
+    $(".close,#modalClose").click(function(e) {
+       $(".modal,.md_comm").addClass("hidden");
+    });
+
+
+    // 페이지 이동시 검색 파라미터 값 자동 저장
+    $('[data-setparam]').on('click', function(e){
+         localStorage.clear();
+         const reg = new RegExp(/[^/]+(?=\.do)/, "g");
+         let pathname = location.pathname.match(reg).join("")
+         localStorage.setItem(pathname, JSON.stringify($("#schFrm").srializeJsonById()));
+    });
+
+    //목록 이전 파라메터 설정
+    if($("#listBtn").length !=0){
+       let listHref = $("#listBtn").attr("href");
+       const reg = new RegExp(/[^/]+(?=\.do)/, "g");
+       let pathname = listHref.match(reg).join("")
+       if(localStorage.getItem(pathname) != null){
+           let preParamMap = JSON.parse(localStorage.getItem(pathname));
+           if(listHref.indexOf("?") > -1){
+               listHref += "&"+lpCom.serializeByJsonData(preParamMap);
+           }else{
+               listHref += "?"+lpCom.serializeByJsonData(preParamMap);
+           }
+           $("#listBtn").attr("href",listHref);
+       }
+    }
+
+    //타사이트 연결시 접속 이력
+    $(document).on('click', '[data-other_site]', function(e) {
+       let otherInit = {isSuccesMsg:false}; //초기화 옵션
+       let paramMap = {menuId:$(this).attr("data-other_site")}
+       lpCom.Ajax("insertSiteCntnHstry", "/insertSiteCntnHstry.do", paramMap, null, otherInit);
+    });
+    
+    //만족도조사 등록
+	$("#dgstfnScrSave").on('click', function () {
+	   let otherInit = {}; //초기화 옵션
+	   let paramMap = {menuId:"M0000416",wholMenuNm:"관측데이터,실시간 관측정보 검색"
+			   			,opnn:$('#opnn').val(),dgstfnScr:$("input[name='dgstfnScr']:checked").val()};
+	   lpCom.Ajax("insertDgstfnExmn", "/insertDgstfnExmn.do", paramMap, null, otherInit);
+	   //location.reload();
+	});
+
+    
+
+
+});
+
+
+</script>
+
+
+<script src="/risa/cmmn/js/jquery.mask.min.js"></script>
+<script src="/risa/cmmn/js/jquery.bpopup.min.js"></script>
+
+<!-- amchart -->
+<script src="/risa/cmmn/amcharts4/core.js"></script>
+<script src="/risa/cmmn/amcharts4/charts.js"></script>
+<script src="/risa/cmmn/amcharts4/themes/animated.js"></script>
+
+
+<script>
+
+</script>
+
+	<script src="/risa/cmmn/js/wlnSearch.js"></script>
+<script>
+/*[BEGIN][그리드 설정]=========================================================================================================================*/
+	var StdGrid = {  // 그리드
+        initGrid: function (addProps) {
+            this.myGridID = "#StdGrid";   // AUI 그리드 ID
+			this.isFirstRowFocus = true; // 처음 로딩시 포커스
+			this.rowCountPage = 20; // 한 페이지 건수
+			this.allCntViewObjID = "allCntView"; // 총건수 표시
+            this.gridParam = {};// 그리드 설정 오브젝트
+            // AUI 그리드 칼럼 설정 http://www.auisoft.net/documentation/auigrid/ColumnLayout/Column.html
+            this.gridParam.columnLayout = [
+                 {dataField: "obsvtrNm", headerText: "관측소명", width: "120"}
+                 , {dataField: "obsrvnDt", headerText: "관측일시", width: "120"}
+                 , {dataField: "wtrTempS", headerText: "표층 수온(°C)", width: "100"}
+                 , {dataField: "sfclyrDpwt", headerText: "표층 수심(m)", width: "80"}
+                 , {dataField: "wtrTempM", headerText: "중층 수온(°C)", width: "100"}
+                 , {dataField: "mlyrDpwt", headerText: "중층 수심(m)", width: "80"}
+                 , {dataField: "wtrTempB", headerText: "저층 수온(°C)", width: "100"}
+                 , {dataField: "btmlyrDpwt", headerText: "저층 수심(m)", width: "80"}
+               ];
+
+            // 그리드 기본 속성 (EDIT , LIST , ... )
+            this.gridParam.auiGridDefaultProps = lpAuiGrid.AuiGridPropList;
+
+            // AUI 그리드 속성  http://www.auisoft.net/documentation/auigrid/DataGrid/Properties.html
+            this.gridParam.auiGridProps = {
+                  autoGridHeight: true
+                , fillColumnSizeMode: true
+				, useCustomPaging : true
+                , showRowNumColumn: false
+                , showRowCheckColumn: false
+                , editable: false
+                , useHScrollBar: true
+                , useVScrollBar: true
+				,noDataMessage: "출력할 데이터가 없습니다."
+                , rowStyleFunction: function(rowIndex, item) {
+                	return "aui-grid-custom-row-css";
+                }
+            };
+        }
+        , setBindingEvent: {
+        }
+
+    };
+
+/*[END][그리드 설정]===========================================================================================================================*/
+
+/*[BEGIN][페이지 초기화,콜백함수]================================================================================================================*/
+	$(document).ready(function() {
+        lpAuiGrid.setInitAuiGrid(StdGrid,{usePaging:true});
+    });
+
+	/**
+	 * 콜백 함수
+	 */
+	let calBackFunc = function(pSid, pData) {
+		switch (pSid) {
+			case "searchStation":
+				let vHtml = "";
+				for (let i = 0; i < pData.retList.length; i++) {
+					vHtml += "<option value='"+pData.retList[i].obsvtrCd+"'>"+pData.retList[i].obsvtrNm+"</option>";
+				}
+				$("#obsvtrCd").html(vHtml);
+				break;
+
+			case "search":
+				StdGrid.setGridData(pData.retList);
+				break;
+
+			case "excel":
+            	let pCols = {};
+            	let option = {};
+            	option.title = "실시간 관측정보 검색";
+            	option.fileNm = "실시간 관측정보 검색";
+
+            	pCols.obsvtrNm = "관측소명";
+            	pCols.obsrvnDt = "관측일시";
+            	pCols.wtrTempS = "표층 수온(°C)";
+            	pCols.sfclyrDpwt = "표층 수심(m)";
+            	pCols.wtrTempM = "중층 수온(°C)";
+            	pCols.mlyrDpwt = "중층 수심(m)";
+            	pCols.wtrTempB = "저층 수온(°C)";
+            	pCols.btmlyrDpwt = "저층 수심(m)";
+
+            	lpCom.downExcel(pData.retList, pCols, option);
+            	break;
+
+		}
+	};
+
+/*[END][페이지 초기화,콜백함수]==================================================================================================================*/
+
+/*[BEGIN][오브젝트 이벤트 활당 시작(lpCom.js 에서 호출됨)]==========================================================================================*/
+	function fnSetObjectEvent() {
+		{// click
+			// 조회
+			$("#schBtn").on("click", function() {
+				StdGrid.selectPage = 1;
+				fnSearch();
+			});
+
+			// 엑셀저장
+			$("#excelBtn").on("click", function() {
+				let otherInit = {}; //초기화 옵션
+            	otherInit.isSuccesMsg = false;
+                let paramMap = $("#schFrm").srializeJsonById();
+                paramMap.rowCountPage = StdGrid.allCnt;
+
+                lpCom.Ajax("excel", "./searchRisaInfoList.do", paramMap, calBackFunc, otherInit);
+			});
+
+			// 텍스트 저장
+			$("#textBtn").on("click", function() {
+				let paramMap = $("#schFrm").srializeJsonById();
+				lpCom.fileDownAjax("./risaInfoTextDownload.do", paramMap);
+			});
+
+		}
+		{// change
+			// 해역에 따른 관측소명 변경
+			$("#obsrvnGroupNm").on("change", function() {
+
+				if(this.value == "X") {
+					$("#obsvtrCd").html("<option value='X'>관측소선택</option>");
+					return;
+				}
+
+				let otherInit = {};
+				otherInit.isSuccesMsg = false;
+				let paramMap= {};
+				paramMap.obsrvnGroupNm = this.value;
+				paramMap.useY = "T";
+				lpCom.Ajax("searchStation", "./getRisaStationCode.do", paramMap, calBackFunc, otherInit);
+			});
+
+			// 관측시간 사용자 지정
+			$("#obsTimeDefault").on("change", function() {
+				const disabled = !$(this).is(":checked");
+
+				if(disabled) {
+					$("#obsTimeFrom").val("0000");
+					$("#obsTimeTo").val("2330");
+				}
+
+				$("#obsTimeFrom").attr("disabled", disabled);
+				$("#obsTimeTo").attr("disabled", disabled);
+			});
+
+			// 관측시간 유효성 체크
+			$("#obsTimeFrom").on("change", function() {
+				let obsTimeFrom = document.getElementById("obsTimeFrom").value;
+				let obsTimeTo = document.getElementById("obsTimeTo").value;
+
+				if(obsTimeFrom > obsTimeTo) {
+					alert("관측시작시간이 관측종료시간보다 큽니다.\n다시 확인해주세요.");
+					$("#obsTimeFrom").val(obsTimeTo);
+				}
+			});
+			$("#obsTimeTo").on("change", function() {
+				let obsTimeFrom = document.getElementById("obsTimeFrom").value;
+				let obsTimeTo = document.getElementById("obsTimeTo").value;
+
+				if(obsTimeFrom > obsTimeTo) {
+					alert("관측시작시간이 관측종료시간보다 큽니다.\n다시 확인해주세요.");
+					$("#obsTimeTo").val(obsTimeFrom);
+				}
+			});
+
+		}
+	};
+
+/*[END][오브젝트 이벤트 활당 시작(lpCom.js 에서 호출됨)]============================================================================================*/
+
+/*[BEGIN][사용자 함수 설정 시작]==================================================================================================================*/
+	// 검색 함수
+	function fnSearch() {
+		let otherInit = {};
+		otherInit.isSuccesMsg = false;
+		otherInit.auiGridObj = StdGrid;
+
+		let paramMap = $("#schFrm").srializeJsonById();
+
+		// 유효성 체크
+		if(paramMap.obsrvnGroupNm == "X") {
+			alert("해역정보를 선택해주세요.");
+			return;
+		}
+		if(paramMap.obsFrom == "") {
+			alert("관측시작일을 입력해주세요.");
+			return;
+		}
+		if(paramMap.obsTo == "") {
+			alert("관측종료일을 입력해주세요.");
+			return;
+		}
+
+		const fromVal = document.getElementById("obsFrom").value;
+	    const toVal   = document.getElementById("obsTo").value;
+	    const fromDate = new Date(fromVal);
+	    const toDate   = new Date(toVal);
+
+	    const diffMs  = toDate - fromDate;
+	    const diffDay = diffMs / (1000 * 60 * 60 * 24);
+
+	    if (diffDay > 30) {
+	        alert("관측자료는 최대 한달 이내로 조회가능합니다. \n관측일시 기간을 한달 이내로 설정하여 주세요.");
+	        return;
+	    }
+
+		lpCom.Ajax("search", "./searchRisaInfoList.do", paramMap, calBackFunc, otherInit);
+	}
+
+	// 관측일시 기간 설정
+	function setDate(n, m) {
+		const toInput = document.getElementById("obsTo").value;
+		let toDate = toInput ? new Date(toInput) : new Date();
+		let fromDate = "";
+
+		let start = new Date(toDate);
+
+		// 제한 조건 체크
+	    if (n == "1" && m == "1" && isDateRange(start, "2020-01-01", "2020-01-01")) {
+	        alert("2020년 1월 1일은 선택이 불가능합니다.");
+	        return;
+	    }else if (n == "1" && m == "7" && isDateRange(start, "2020-01-01", "2020-01-07")) {
+	        alert("2020년 1월 1일 ~ 7일은 선택이 불가능합니다.");
+	        return;
+	    }else if (n == "2" && m == "1" && isDateRange(start, "2020-01-01", "2020-01-30")) {
+	        alert("2020년 1월 1일 ~ 30일은 선택이 불가능합니다.");
+	        return;
+	    }
+
+		if(n == "1") {
+			start.setDate(start.getDate() - m);
+		}else {
+			start.setMonth(start.getMonth() - m);
+			start.setDate(start.getDate() + 1);
+		}
+
+		if(m == "0") {
+			fromDate = new Date();
+			toDate = new Date();
+		}else {
+			fromDate = start;
+		}
+
+		// yyyy-mm-dd 포맷 함수
+	    const format = (d) => {
+	        const yyyy = d.getFullYear();
+	        const mm = String(d.getMonth() + 1).padStart(2, "0");
+	        const dd = String(d.getDate()).padStart(2, "0");
+	        return yyyy+"-"+mm+"-"+dd;
+	    };
+
+	    $("#obsFrom").val(format(fromDate));
+	    $("#obsTo").val(format(toDate));
+	}
+
+	// 날짜 범위 체크 유틸
+	function isDateRange(date, from, to) {
+	    const d = date.getTime();
+	    return d >= new Date(from).getTime() && d <= new Date(to).getTime();
+	}
+
+/*[END][사용자 함수 설정 시작]====================================================================================================================*/
+</script>
+
+</body>
+</html>
