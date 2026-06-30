@@ -1,10 +1,12 @@
 # -*- coding: utf-8-sig -*-
 """
 스파이크(급등락) 검사.
-알고리즘 3종을 method 파라미터로 선택한다.
-  'zscore' — 전역 평균/표준편차 기반 z점수 (정규 분포 가정)
-  'iqr'    — 사분위 범위(IQR) 기반 (극단값에 강건)
-  'median' — 이웃 중앙값 편차 기반 (기본값; 로컬 패턴 적응)
+알고리즘 4종을 method 파라미터로 선택한다.
+  'zscore'   — 전역 평균/표준편차 기반 z점수 (정규 분포 가정)
+  'iqr'      — 사분위 범위(IQR) 기반 (극단값에 강건)
+  'median'   — 이웃 중앙값 편차 기반 (기본값; 로컬 패턴 적응)
+  'tukey53h' — Tukey 53H 필터 잔차 + MAD 기반 (QARTOD 표준; 로컬 트렌드 추종)
+               출처: QARTOD Manual (IOOS/NOAA 2020), Castelão 2021 (CoTeDe)
 """
 
 import numpy as np
@@ -38,7 +40,9 @@ def run(
         return _spike_iqr(series, threshold)
     if method == "median":
         return _spike_median(series, threshold, window)
-    raise ValueError(f"지원하지 않는 method: {method!r}  (zscore | iqr | median)")
+    if method == "tukey53h":
+        return _spike_tukey53h(series, threshold)
+    raise ValueError(f"지원하지 않는 method: {method!r}  (zscore | iqr | median | tukey53h)")
 
 
 # ---------------------------------------------------------------------------
@@ -120,5 +124,49 @@ def _spike_median(series: pd.Series, threshold: float, window: int) -> pd.Series
         ref = float(np.median(neighbors))
         if abs(vals[i] - ref) >= threshold:
             flags.iloc[i] = FLAG_BAD
+
+    return flags
+
+
+def _spike_tukey53h(series: pd.Series, threshold: float) -> pd.Series:
+    """
+    Tukey 53H 필터 잔차 + MAD 기반 스파이크 탐지 (QARTOD 표준).
+
+    단계:
+      S1 = 길이 5 슬라이딩 중앙값 (T5)
+      S2 = S1의 길이 3 슬라이딩 중앙값 (T3)
+      S3 = S2의 Hanning 가중 이동평균 1/4·1/2·1/4 (H) → smooth baseline
+      residual = series - S3
+      MAD = median(|residual - median(residual)|)
+      |residual| >= threshold * 1.5 * MAD → BAD
+
+    threshold 파라미터는 MAD 배수 N (QARTOD 권고 N=2~4).
+    경계 맹점: 시계열 양 끝 2포인트는 S3가 NaN이어서 판정 불가 — 알려진 한계.
+    """
+    flags = _init_flags(series)
+    valid = ~series.isna()
+
+    # T5: 길이 5 중앙값
+    s1 = series.rolling(5, center=True, min_periods=3).median()
+    # T3: 길이 3 중앙값
+    s2 = s1.rolling(3, center=True, min_periods=2).median()
+    # H: Hanning 가중 이동평균 (1/4, 1/2, 1/4)
+    s3 = s2.rolling(3, center=True, min_periods=3).apply(
+        lambda w: 0.25 * w[0] + 0.5 * w[1] + 0.25 * w[2], raw=True
+    )
+
+    residual = series - s3
+    valid_res = residual.dropna()
+    if len(valid_res) < 3:
+        return flags
+
+    mad = (valid_res - valid_res.median()).abs().median()
+    # MAD = 0 가드: 완전 평탄 신호에서 threshold_val=0 → 전체 오탐 방지
+    if mad < 1e-10:
+        return flags
+
+    threshold_val = threshold * 1.5 * mad
+    mask = valid & residual.notna() & (residual.abs() >= threshold_val)
+    flags[mask] = FLAG_BAD
 
     return flags

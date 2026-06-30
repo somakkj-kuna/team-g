@@ -12,6 +12,7 @@ import pytest
 
 from qcsrc.checks import FLAG_GOOD, FLAG_SUSPECT, FLAG_BAD, FLAG_MISSING
 from qcsrc.checks import range_check, spike_check, stuck_check, roc_check, edge_check
+from qcsrc.checks import attenuated_check, dynamic_range_check
 
 
 def _make(values, freq="1h", start="2025-01-01"):
@@ -262,3 +263,143 @@ class TestEdgeCheck:
         flags = edge_check.run(s, gap_min="24h", fwd_scan="4h",
                                n_start=3, abs_fail=5.0, abs_suspect=2.0)
         assert flags.iloc[1] == FLAG_MISSING
+
+
+# ---------------------------------------------------------------------------
+# attenuated_check (Phase 1)
+# ---------------------------------------------------------------------------
+
+class TestAttenuatedCheck:
+    def test_normal_variation_all_good(self):
+        # 변동량이 충분히 큰 정상 데이터 → 전부 GOOD
+        vals = [20.0 + 0.5 * i for i in range(20)]
+        s = _make(vals)
+        flags = attenuated_check.run(s, window="5h", min_var=0.01, metric="std")
+        assert (flags[~s.isna()] == FLAG_GOOD).all()
+
+    def test_flat_signal_flagged_suspect(self):
+        # 완전 동일값(std=0) → SUSPECT (window 이후부터 탐지)
+        s = _make([20.0] * 20)
+        flags = attenuated_check.run(s, window="5h", min_var=0.01, metric="std")
+        # rolling window 채운 이후 구간은 SUSPECT
+        assert (flags.iloc[5:] == FLAG_SUSPECT).all()
+
+    def test_range_metric(self):
+        # metric='range' 로도 동일 탐지
+        s = _make([20.0] * 20)
+        flags = attenuated_check.run(s, window="5h", min_var=0.01, metric="range")
+        assert (flags.iloc[5:] == FLAG_SUSPECT).all()
+
+    def test_nan_preserved_as_missing(self):
+        s = _make([np.nan] + [20.0] * 15)
+        flags = attenuated_check.run(s, window="5h", min_var=0.5, metric="std")
+        assert flags.iloc[0] == FLAG_MISSING
+
+    def test_invalid_metric_raises(self):
+        s = _make([1.0, 2.0])
+        with pytest.raises(ValueError):
+            attenuated_check.run(s, window="2h", min_var=0.01, metric="bad_metric")
+
+    def test_non_datetime_index_raises(self):
+        s = pd.Series([1.0, 2.0], index=[0, 1])
+        with pytest.raises(TypeError):
+            attenuated_check.run(s, window="2h", min_var=0.01)
+
+
+# ---------------------------------------------------------------------------
+# spike_check — tukey53h method (Phase 2)
+# ---------------------------------------------------------------------------
+
+class TestSpikeTukey53H:
+    def test_normal_data_all_good(self):
+        # 노이즈 없는 단조 시계열 → 전부 GOOD
+        s = _make([20.0 + 0.01 * i for i in range(30)])
+        flags = spike_check.run(s, method="tukey53h", threshold=3.0)
+        assert (flags[~s.isna()] == FLAG_GOOD).all()
+
+    def test_isolated_spike_flagged_bad(self):
+        # 자연 변동이 있는 신호에 큰 스파이크 삽입 → BAD
+        # 완전 평탄 신호는 MAD=0 → 탐지 불가 (그 경우는 stuck/attenuated 검사 담당)
+        rng = np.random.default_rng(42)
+        base = [20.0 + 0.5 * np.sin(i * 0.4) + 0.1 * rng.normal() for i in range(21)]
+        base[10] = 99.0
+        s = _make(base)
+        flags = spike_check.run(s, method="tukey53h", threshold=3.0)
+        assert flags.iloc[10] == FLAG_BAD
+
+    def test_flat_signal_mad_guard(self):
+        # 완전 평탄 신호(MAD=0) → 오탐 없이 전부 GOOD
+        s = _make([20.0] * 20)
+        flags = spike_check.run(s, method="tukey53h", threshold=3.0)
+        assert (flags[~s.isna()] == FLAG_GOOD).all()
+
+    def test_nan_preserved_as_missing(self):
+        vals = [np.nan] + [20.0] * 5 + [99.0] + [20.0] * 5
+        s = _make(vals)
+        flags = spike_check.run(s, method="tukey53h", threshold=3.0)
+        assert flags.iloc[0] == FLAG_MISSING
+
+    def test_invalid_method_raises(self):
+        s = _make([1.0, 2.0])
+        with pytest.raises(ValueError):
+            spike_check.run(s, method="unknown")
+
+
+# ---------------------------------------------------------------------------
+# dynamic_range_check (Phase 3)
+# ---------------------------------------------------------------------------
+
+class TestDynamicRangeCheck:
+    # 1월~12월 동일 범위 테이블 (테스트 편의)
+    _TABLE_2 = {m: (-2.0, 35.0) for m in range(1, 13)}
+
+    def test_normal_data_all_good(self):
+        s = _make([10.0, 20.0, 30.0])
+        flags = dynamic_range_check.run(s, quantile_table=self._TABLE_2)
+        assert (flags[~s.isna()] == FLAG_GOOD).all()
+
+    def test_above_max_flagged_bad(self):
+        s = _make([10.0, 99.0])
+        flags = dynamic_range_check.run(s, quantile_table=self._TABLE_2)
+        assert flags.iloc[0] == FLAG_GOOD
+        assert flags.iloc[1] == FLAG_BAD
+
+    def test_below_min_flagged_bad(self):
+        s = _make([-10.0, 10.0])
+        flags = dynamic_range_check.run(s, quantile_table=self._TABLE_2)
+        assert flags.iloc[0] == FLAG_BAD
+        assert flags.iloc[1] == FLAG_GOOD
+
+    def test_four_value_bounds_suspect(self):
+        # (lo_bad, lo_sus, hi_sus, hi_bad) = (-5, -1, 30, 35)
+        table_4 = {m: (-5.0, -1.0, 30.0, 35.0) for m in range(1, 13)}
+        s = _make([-3.0, 10.0, 32.0, 40.0])
+        flags = dynamic_range_check.run(s, quantile_table=table_4)
+        assert flags.iloc[0] == FLAG_SUSPECT   # -3 → lo_bad~lo_sus 사이
+        assert flags.iloc[1] == FLAG_GOOD
+        assert flags.iloc[2] == FLAG_SUSPECT   # 32 → hi_sus~hi_bad 사이
+        assert flags.iloc[3] == FLAG_BAD       # 40 > hi_bad
+
+    def test_missing_month_fallback(self):
+        # 1월만 테이블에 있고, fallback_range 적용
+        table = {1: (-2.0, 35.0)}
+        s = _make([99.0])   # 2025-01-01 → 1월, 테이블 있음
+        flags = dynamic_range_check.run(s, quantile_table=table,
+                                        fallback_range={"vmin": -2.0, "vmax": 35.0})
+        assert flags.iloc[0] == FLAG_BAD
+
+    def test_nan_preserved_as_missing(self):
+        s = _make([np.nan, 10.0])
+        flags = dynamic_range_check.run(s, quantile_table=self._TABLE_2)
+        assert flags.iloc[0] == FLAG_MISSING
+        assert flags.iloc[1] == FLAG_GOOD
+
+    def test_non_datetime_index_raises(self):
+        s = pd.Series([1.0, 2.0], index=[0, 1])
+        with pytest.raises(TypeError):
+            dynamic_range_check.run(s, quantile_table=self._TABLE_2)
+
+    def test_invalid_mode_raises(self):
+        s = _make([10.0])
+        with pytest.raises(ValueError):
+            dynamic_range_check.run(s, quantile_table=self._TABLE_2, mode="bad")

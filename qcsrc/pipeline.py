@@ -30,7 +30,10 @@ print(result)
 import pandas as pd
 
 from qcsrc import preprocess
-from qcsrc.checks import range_check, spike_check, stuck_check, roc_check, edge_check
+from qcsrc.checks import (
+    range_check, spike_check, stuck_check, roc_check, edge_check,
+    attenuated_check, dynamic_range_check,
+)
 
 
 def run_pipeline(series: pd.Series, config: dict) -> pd.DataFrame:
@@ -101,6 +104,18 @@ def run_pipeline(series: pd.Series, config: dict) -> pd.DataFrame:
     results["flag_edge"] = (
         edge_check.run(s, **config["edge"])
         if "edge" in config
+        else pd.Series(1, index=s.index, dtype=int)
+    )
+
+    results["flag_attenuated"] = (
+        attenuated_check.run(s, **config["attenuated"])
+        if "attenuated" in config
+        else pd.Series(1, index=s.index, dtype=int)
+    )
+
+    results["flag_dynamic_range"] = (
+        dynamic_range_check.run(s, **config["dynamic_range"])
+        if "dynamic_range" in config
         else pd.Series(1, index=s.index, dtype=int)
     )
 
