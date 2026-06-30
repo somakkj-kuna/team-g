@@ -5,6 +5,26 @@ QC 파이프라인 진입점.
 각 단계의 flag를 DataFrame 열로 보존하고, 최종 flag를 severity 기준 최댓값으로 결합한다.
 
 Severity 순위(수치 최대값이 최우선): MISSING(9) > BAD(3) > SUSPECT(2) > GOOD(1)
+
+Quick Start
+-----------
+import pandas as pd
+from qcsrc.pipeline import run_pipeline
+
+series = pd.Series([20.1, 20.2, 99.9, 20.3, 20.3, 20.3, 20.3],
+                   index=pd.date_range('2026-01-01', periods=7, freq='1h'))
+
+config = {
+    'resample_freq': '1h',
+    'fill_method': 'linear',
+    'range': {'vmin': -5, 'vmax': 40},
+    'spike': {'method': 'median', 'threshold': 3.0},
+    'stuck': {'min_change': 0.001, 'window': 4},
+    'roc': {'max_rate': 5.0},
+}
+
+result = run_pipeline(series, config)
+print(result)
 """
 
 import pandas as pd

@@ -37,18 +37,21 @@
 
 ## 2. 데이터 경로 및 폴더 구조
 
-### 2.1 원시 데이터 입력 경로
+### 2.1 전처리 입력 경로 (parquet)
+
+QC 파이프라인의 실제 입력은 원시 CSV가 아닌 **전처리된 parquet** 파일이다.
 
 ```
-/data/DATA/OBS/raw/
-├── khoa/
-│   ├── tidal/          # 검조소 (월별 CSV)
-│   └── buoy/           # 부이 (월별 CSV)
-├── kma/
-│   └── buoy/           # 기상청 부이 (월별 CSV)
-└── nifs/
-    └── buoy/           # 국립수산과학원 부이 (월별 CSV)
+/data/DATA/OBS/prc/
+├── tidal/
+│   └── {yyyy}/
+│       └── {yyyymmdd}.parquet       # 전처리된 조위 (일별 parquet)
+└── buoy/
+    └── {yyyy}/
+        └── {yyyymmdd}.parquet       # 전처리된 부이 (일별 parquet)
 ```
+
+> 원시 수집 CSV(`/data/DATA/OBS/raw/`)는 수집기가 생성하는 중간 파일이며, QC 파이프라인은 전처리된 prc parquet을 입력으로 사용한다.
 
 ### 2.2 프로젝트 전체 폴더 트리
 
@@ -86,12 +89,12 @@
 │   │       └── config_loader.py      # TOML 설정 로더 (3단계 병합)
 │   │
 │   └── tmp/                          # 임시 작업 파일 (파이프라인 중간 결과)
-│       ├── sorted/                   # 00_sort 출력
+│       ├── sorted/                   # 00_sort 출력 (parquet)
 │       │   └── {dataset}/
-│       │       └── {agency}_{YYYYMM}.csv
+│       │       └── {agency}_{key}.parquet
 │       └── flags/                    # 01~03 임시 flag CSV
 │           └── {agency}/{station_id}/
-│               └── {YYYYMM}_flag.csv
+│               └── {key}_flag.csv
 │
 ├── meta/                             # 메타데이터
 │   ├── agencies/
@@ -137,12 +140,12 @@ bash run_qc.sh khoa tidal 2025 2025 --from-step 01   # AQC1부터 재처리
 ### 3.2 데이터 흐름 다이어그램
 
 ```
-원시 CSV (raw/...)
+전처리 parquet (/data/DATA/OBS/prc/{tidal,buoy}/{yyyy}/{yyyymmdd}.parquet)
         │
         ▼
   [00_sort.py]
   정렬·표준화·중복 제거
-  → src/tmp/sorted/{dataset}/{agency}_{YYYYMM}.csv
+  → src/tmp/sorted/{dataset}/{agency}_{key}.parquet
         │
         ▼
   [01_aqc1.py]  — 1차 자동 QC (물리 검사)
@@ -180,12 +183,24 @@ bash run_qc.sh khoa tidal 2025 2025 --from-step 01   # AQC1부터 재처리
 
 | 항목 | 내용 |
 |------|------|
-| 입력 | 원시 월별 CSV |
-| 출력 | `src/tmp/sorted/{dataset}/{agency}_{YYYYMM}.csv` |
+| 입력 | 전처리 parquet (`/data/DATA/OBS/prc/{tidal,buoy}/{yyyy}/{yyyymmdd}.parquet`) |
+| 출력 | `src/tmp/sorted/{dataset}/{agency}_{key}.parquet` |
 | 처리 | 변수명 표준화(`var_aliases`), 결측 sentinel 제거(-999 등), UV 성분 도출, 중복 제거, station_id 패턴 검증 |
 | 스킵 조건 | 해당 기간 데이터 이미 존재 시 건너뜀 |
 
 Long format 컬럼: `time, agency, station_id, lat, lon, var_id, value, depth_m`
+
+**NIFS 부이 수온 깊이 매핑** (`loader.py::apply_depth_mapping_nifs()`):
+
+NIFS 부이는 동일 변수명 `temp`로 3개 수심의 수온을 전송한다. 로드 단계에서 `loader.py`의 `apply_depth_mapping_nifs()` 함수가 `depth_m` rank를 기준으로 표준 var_id를 부여한다:
+
+| depth_m rank | 표준 var_id | 의미 |
+|:---:|---|---|
+| 가장 얕은 수심 (rank 1) | `sur_temp` | 표층수온 |
+| 중간 수심 (rank 2) | `mid_temp` | 중층수온 |
+| 가장 깊은 수심 (rank 3) | `bot_temp` | 저층수온 |
+
+이 매핑 없이는 NIFS 수온 3개가 모두 `temp`로 중복 적재되어 수직 일관성 검사(`check_vertical`)가 동작하지 않는다.
 
 #### Step 01: `01_aqc1.py` — 1차 자동 QC
 
@@ -202,10 +217,11 @@ Long format 컬럼: `time, agency, station_id, lat, lon, var_id, value, depth_m`
 9. `vertical` — 수직층 일관성 (sur/mid/bot_temp)
 10. `vector_range` — U-V 합성 크기 범위
 
-**플래그 병합 원칙**: severity 높은 쪽이 이긴다 (bad > suspect > good)
+**플래그 병합 원칙**: severity 높은 쪽이 이긴다
 
 ```
-SEVERITY: bad(3) > missing(9) > suspect(2) > good(1)
+SEVERITY: MISSING(9) > BAD(3) > SUSPECT(2) > GOOD(1)
+(주의: 코드 숫자 크기 ≠ severity 순서. 9가 최고 severity이나 이는 약속된 코드일 뿐이다)
 ```
 
 #### Step 02: `02_aqc2.py` — 2차 자동 QC (rolling 통계)
@@ -251,26 +267,26 @@ reason      = "typhoon_KHANUN"
 
 ## 4. Flag 체계
 
-### 4.1 플래그 코드
+### 4.1 플래그 코드 및 Severity 순위 (통합 표)
 
-| 코드 | 이름 | 의미 |
-|------|------|------|
-| `1` | GOOD | 정상 데이터 |
-| `2` | SUSPECT | 의심스러운 데이터 (사용 가능하나 주의) |
-| `3` | BAD | 불량 데이터 (분석에서 제외) |
-| `4` | INTERPOLATED | 보간 데이터 (현재 미사용) |
-| `9` | MISSING | 결측값 (NaN) |
-| `0` | UNSET | 초기값 (처리 후 GOOD으로 전환) |
+> **주의**: 코드 숫자 크기 ≠ severity 순서. 9(MISSING)이 수치상 가장 크지만, 이는 약속된 코드이며 severity 순서는 아래 표의 "severity 순위" 열을 따른다.
 
-### 4.2 Severity 순위
+| 코드 | 이름 | severity 순위 | 의미 |
+|:----:|------|:---:|------|
+| `9` | MISSING | 1위 (최고) | 결측값 (NaN). 어떤 검사도 덮어쓰지 않는다 |
+| `3` | BAD | 2위 | 불량 데이터 (분석에서 제외) |
+| `2` | SUSPECT | 3위 | 의심스러운 데이터 (사용 가능하나 주의) |
+| `4` | INTERPOLATED | 4위 | 보간 데이터 (현재 미사용) |
+| `1` | GOOD | 5위 | 정상 데이터 |
+| `0` | UNSET | 6위 (최저) | 초기값 (처리 후 GOOD으로 전환) |
+
+병합 기준: `flag_final = max(flag_aqc1, flag_aqc2, flag_mqc)` — severity가 더 높은 flag가 우선한다.
 
 ```
-severity: MISSING(9) > BAD(3) > SUSPECT(2) > GOOD(1) > UNSET(0)
+severity: MISSING(9) > BAD(3) > SUSPECT(2) > INTERPOLATED(4) > GOOD(1) > UNSET(0)
 ```
 
-병합 시 severity가 더 높은 flag가 우선한다. 단, MISSING(결측)은 어떤 검사도 덮어쓰지 않는다.
-
-### 4.3 flag 컬럼 구조 (flag CSV)
+### 4.2 flag 컬럼 구조 (flag CSV)
 
 ```
 time, agency, station_id, lat, lon, var_id, value, depth_m,
@@ -878,3 +894,18 @@ python src/libs/pipeline/05_plot.py \
 | 최종 저장 | `src/libs/pipeline/04_export.py` |
 | 월별/연간 시각화 | `src/libs/pipeline/05_plot.py` |
 | 다년도 시각화 | `src/libs/pipeline/07_plot_multiyr.py` |
+
+---
+
+## 12. 운영 환경
+
+- **conda 환경**: `/home/collect/appl/miniconda3/envs/dataenv/bin/python`
+- **crontab**: 매일 06:30, flock 락파일 사용
+  ```
+  30 6 * * * flock -n /home/collect/collector/run/QC_obs.lock \
+    /home/collect/collector/bin/runjob QC_obs /home/collect/QC/src \
+    /bin/bash /home/collect/QC/src/run_qc.sh
+  ```
+- **락파일**: `/home/collect/collector/run/QC_obs.lock` (동시 실행 방지)
+- **한글 폰트**: `/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc` (Noto Sans CJK JP — JP이지만 한글 글리프 포함)
+- **진입점**: `bash /home/collect/QC/src/run_qc.sh [agency] [dataset] [date]`
