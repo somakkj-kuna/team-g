@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoSR 조위관측소 QC 플랫폼</title>
+  <link rel="icon" href="/static/symbol.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="/static/styles.css?v=3">
+  <script src="/static/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <img class="logo" src="/static/logo_kr.png" alt="GeoSR" onerror="this.style.display='none'">
+      <div class="title-box">
+        <div class="title">조위관측소 관측자료 품질관리(QC) 플랫폼</div>
+        <div class="subtitle">국립해양조사원 조위관측소 실측자료 · 변수별 이상치 검출 및 AI 분석·보고서</div>
+      </div>
+    </header>
+
+    <div class="body">
+      <!-- 좌측: 콘텐츠 -->
+      <main class="content">
+        <section class="card">
+          <div class="card-head">
+            <h2>변수별 수집 현황</h2>
+            <span class="muted">관측 항목(변수)을 선택하면 해당 자료로 QC를 수행합니다.</span>
+          </div>
+          <div id="var-cards" class="var-cards"></div>
+        </section>
+
+        <section class="card">
+          <div class="controls">
+            <div class="field">
+              <label for="variable">변수(항목)</label>
+              <select id="variable"></select>
+            </div>
+            <div class="field">
+              <label for="station">관측소</label>
+              <select id="station"></select>
+            </div>
+            <div class="field"><label for="range_min">하한</label><input id="range_min" type="number" step="0.5"></div>
+            <div class="field"><label for="range_max">상한</label><input id="range_max" type="number" step="0.5"></div>
+            <div class="field"><label for="window">윈도</label><input id="window" type="number" step="2" min="3"></div>
+            <div class="field"><label for="mad_k">MAD k</label><input id="mad_k" type="number" step="0.5" min="1"></div>
+            <button id="apply" class="btn-primary">QC 적용</button>
+            <span id="status" class="status"></span>
+          </div>
+        </section>
+
+        <section class="stats" id="stats"></section>
+
+        <section class="card">
+          <h2 class="card-title">QC 시계열 <span class="muted" id="chart-sub"></span></h2>
+          <div id="chart"></div>
+        </section>
+
+        <section class="card">
+          <h2 class="card-title">전 관측소 이상치 요약 <span class="muted">(현재 파라미터 기준)</span></h2>
+          <div id="summary"></div>
+        </section>
+      </main>
+
+      <!-- 우측: AI 채팅 패널 -->
+      <aside class="chat">
+        <div class="chat-head">
+          <h3>🤖 AI 데이터 분석</h3>
+          <p>선택한 자료의 QC 결과를 근거로 분석·답변하고, 한글 보고서를 만들어 드립니다.</p>
+        </div>
+        <div class="chat-context">
+          <div class="ctx-target">분석 대상: <b id="chat-target">—</b></div>
+          <label class="scope-toggle"><input type="checkbox" id="scope_all"> 전국 통합</label>
+        </div>
+        <div id="messages" class="messages"></div>
+        <div class="composer">
+          <div class="row">
+            <textarea id="question"
+              placeholder="데이터 기반으로 질문하세요. 예) 이 이상치가 계측 오류인지 실제 현상인지 판단해줘"></textarea>
+            <button id="ask" class="btn send">전송</button>
+          </div>
+          <button id="report" class="btn report" disabled>📄 한글 보고서(HWPX) 생성</button>
+          <div id="report-status" class="report-status"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script src="/static/app.js?v=3"></script>
+</body>
+</html>
