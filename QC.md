@@ -37,21 +37,21 @@
 
 ## 2. 데이터 경로 및 폴더 구조
 
-### 2.1 전처리 입력 경로 (parquet)
+### 2.1 전처리 입력 경로 (CSV)
 
-QC 파이프라인의 실제 입력은 원시 CSV가 아닌 **전처리된 parquet** 파일이다.
+QC 파이프라인의 실제 입력은 **전처리된 CSV** 파일이다.
 
 ```
 /data/DATA/OBS/prc/
 ├── tidal/
 │   └── {yyyy}/
-│       └── {yyyymmdd}.parquet       # 전처리된 조위 (일별 parquet)
+│       └── {yyyymmdd}.csv           # 전처리된 조위 (일별 CSV)
 └── buoy/
     └── {yyyy}/
-        └── {yyyymmdd}.parquet       # 전처리된 부이 (일별 parquet)
+        └── {yyyymmdd}.csv           # 전처리된 부이 (일별 CSV)
 ```
 
-> 원시 수집 CSV(`/data/DATA/OBS/raw/`)는 수집기가 생성하는 중간 파일이며, QC 파이프라인은 전처리된 prc parquet을 입력으로 사용한다.
+> 원시 수집 CSV(`/data/DATA/OBS/raw/`)는 수집기가 생성하는 중간 파일이며, QC 파이프라인은 전처리된 prc CSV를 입력으로 사용한다.
 
 ### 2.2 프로젝트 전체 폴더 트리
 
@@ -89,9 +89,9 @@ QC 파이프라인의 실제 입력은 원시 CSV가 아닌 **전처리된 parqu
 │   │       └── config_loader.py      # TOML 설정 로더 (3단계 병합)
 │   │
 │   └── tmp/                          # 임시 작업 파일 (파이프라인 중간 결과)
-│       ├── sorted/                   # 00_sort 출력 (parquet)
+│       ├── sorted/                   # 00_sort 출력 (CSV)
 │       │   └── {dataset}/
-│       │       └── {agency}_{key}.parquet
+│       │       └── {agency}_{key}.csv
 │       └── flags/                    # 01~03 임시 flag CSV
 │           └── {agency}/{station_id}/
 │               └── {key}_flag.csv
@@ -140,12 +140,12 @@ bash run_qc.sh khoa tidal 2025 2025 --from-step 01   # AQC1부터 재처리
 ### 3.2 데이터 흐름 다이어그램
 
 ```
-전처리 parquet (/data/DATA/OBS/prc/{tidal,buoy}/{yyyy}/{yyyymmdd}.parquet)
+전처리 CSV (/data/DATA/OBS/prc/{tidal,buoy}/{yyyy}/{yyyymmdd}.csv)
         │
         ▼
   [00_sort.py]
   정렬·표준화·중복 제거
-  → src/tmp/sorted/{dataset}/{agency}_{key}.parquet
+  → src/tmp/sorted/{dataset}/{agency}_{key}.csv
         │
         ▼
   [01_aqc1.py]  — 1차 자동 QC (물리 검사)
@@ -183,8 +183,8 @@ bash run_qc.sh khoa tidal 2025 2025 --from-step 01   # AQC1부터 재처리
 
 | 항목 | 내용 |
 |------|------|
-| 입력 | 전처리 parquet (`/data/DATA/OBS/prc/{tidal,buoy}/{yyyy}/{yyyymmdd}.parquet`) |
-| 출력 | `src/tmp/sorted/{dataset}/{agency}_{key}.parquet` |
+| 입력 | 전처리 CSV (`/data/DATA/OBS/prc/{tidal,buoy}/{yyyy}/{yyyymmdd}.csv`) |
+| 출력 | `src/tmp/sorted/{dataset}/{agency}_{key}.csv` |
 | 처리 | 변수명 표준화(`var_aliases`), 결측 sentinel 제거(-999 등), UV 성분 도출, 중복 제거, station_id 패턴 검증 |
 | 스킵 조건 | 해당 기간 데이터 이미 존재 시 건너뜀 |
 
