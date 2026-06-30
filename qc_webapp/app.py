@@ -1,40 +1,40 @@
 # -*- coding: utf-8 -*-
-"""조위관측소 수온 QC 웹앱 — Flask 백엔드.
+"""해양관측 QC 웹앱 — Flask 백엔드 (sample_data 3기관 사전 QC 결과 기반).
 
 엔드포인트
-  GET  /                          정적 SPA(index.html)
-  GET  /api/health               헬스체크
-  GET  /api/stations             관측소 목록(메타)
-  GET  /api/qc?obs=DT_0001&...    단일 관측소 시계열 + QC 결과
-  GET  /api/qc/summary?...        전 관측소 QC 요약(이상치 개수 등)
-  POST /api/chat                  데이터(QC 결과) 기반 LLM 분석
-  POST /api/report                분석 내용 → 한글(HWPX) 보고서 생성
-  GET  /api/report/download/<f>   보고서 다운로드
+  GET  /                                  정적 SPA(index.html)
+  GET  /api/health                        헬스체크
+  GET  /api/sources                       수집 현황(카테고리·기관 소스 매트릭스)
+  GET  /api/stations?agency=              기관 관측소 목록
+  GET  /api/variables?agency=&station=    관측소 변수별 QC 현황
+  GET  /api/qc?agency=&station=&var=&period=   변수 시계열 + flag_final
+  POST /api/chat                          QC 결과 기반 LLM 분석
+  POST /api/report                        분석 → 한글(HWPX) 보고서
+  GET  /api/report/download/<f>           보고서 다운로드
 """
+import csv
 import datetime as dt
-import json
+import io
 import os
-import re
 import subprocess
-import sys
-import time
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, request, send_from_directory
 
 import data as D
-import qc as QC
 import report as R
 import variables as V
+import sources as S
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 REPORTS_DIR = os.path.join(BASE_DIR, "reports")
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
-# 기존 NOSC 플랫폼과 동일한 LLM/보고서 스킬 경로 재사용
 CLAUDE_BIN = "/home/mwcho/.local/bin/claude"
-CLAUDE_MODEL = "haiku"   # 분석 속도↑ (분량은 프롬프트가 섹션 강제). 품질 더 원하면 'sonnet'
+CLAUDE_MODEL = "haiku"
 CLAUDE_EFFORT = "low"
+
+PERIOD_LABEL = {"1m": "최근 1개월", "1y": "최근 1년", "all": "전체 기간"}
 
 app = Flask(__name__, static_folder=None)
 
@@ -43,7 +43,6 @@ app = Flask(__name__, static_folder=None)
 # LLM 호출 (claude CLI 헤드리스)
 # ---------------------------------------------------------------------------
 def run_claude(prompt, timeout=180):
-    """claude -p 헤드리스 호출. 실패 시 None."""
     try:
         env = dict(os.environ)
         env.setdefault("HOME", "/home/mwcho")
@@ -65,6 +64,16 @@ def run_claude(prompt, timeout=180):
 # ---------------------------------------------------------------------------
 # 정적 SPA
 # ---------------------------------------------------------------------------
+@app.after_request
+def _no_cache_static(resp):
+    """개발 중 정적 자산(HTML/JS/CSS) 캐시 방지 → 변경 즉시 반영."""
+    if request.path == "/" or request.path.startswith("/static/"):
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+    return resp
+
+
 @app.route("/")
 def index():
     return send_from_directory(STATIC_DIR, "index.html")
@@ -81,147 +90,241 @@ def health():
 
 
 # ---------------------------------------------------------------------------
-# QC API
+# 수집 현황 / 관측소 / 변수
 # ---------------------------------------------------------------------------
-def _parse_params(args) -> dict:
-    out = {}
-    for key in QC.DEFAULT_PARAMS:
-        if key in args and args.get(key) != "":
-            out[key] = args.get(key)
-    return out
-
-
-@app.route("/api/variables")
-def api_variables():
-    """변수(관측 항목) 목록 + 변수별 수집 현황."""
-    return jsonify(D.variable_status())
+@app.route("/api/sources")
+def api_sources():
+    return jsonify(S.collection_status())
 
 
 @app.route("/api/stations")
 def api_stations():
-    var = request.args.get("var", V.DEFAULT_VAR)
-    return jsonify(D.list_stations(var))
+    agency = request.args.get("agency", "")
+    return jsonify([D.station_meta(agency, s) for s in D.list_stations(agency)])
+
+
+@app.route("/api/variables")
+def api_variables():
+    agency = request.args.get("agency", "")
+    station = request.args.get("station", "")
+    if not station:
+        sts = D.list_stations(agency)
+        station = sts[0] if sts else ""
+    return jsonify({
+        "agency": agency, "agencyName": D.agency_name(agency),
+        "station": station, "name": D.station_name(agency, station),
+        "variables": D.variable_status(agency, station),
+    })
+
+
+# ---------------------------------------------------------------------------
+# 시계열 + QC flag
+# ---------------------------------------------------------------------------
+def _filter_series_time(series, period):
+    """데이터 최신 시점 기준 기간(1m/1y/all) 필터. (sample_data는 2025년 고정)"""
+    if not period or period == "all" or not series:
+        return series
+    days = 30 if period == "1m" else 365 if period == "1y" else None
+    if days is None:
+        return series
+    last = max((p["time"] or "")[:10] for p in series if p.get("time"))
+    try:
+        y, m, d = (int(x) for x in last.split("-"))
+        cut = (dt.date(y, m, d) - dt.timedelta(days=days)).isoformat()
+    except (ValueError, TypeError):
+        return series
+    return [p for p in series if (p["time"] or "")[:10] >= cut]
 
 
 @app.route("/api/qc")
 def api_qc():
+    agency = request.args.get("agency", "")
+    station = request.args.get("station", "")
     var = request.args.get("var", V.DEFAULT_VAR)
+    period = request.args.get("period")
     vmeta = V.get(var)
-    obs = request.args.get("obs", "")
-    st = D.load_station(var, obs)
-    if st is None:
-        return jsonify(error="관측소를 찾을 수 없습니다: %s/%s" % (var, obs)), 404
-    params = _parse_params(request.args)
-    result = QC.run_qc(st.get("series", []), params, base=vmeta["qc"])
+    series = _filter_series_time(D.load_series(agency, station, var), period)
+    if not series:
+        return jsonify(error="자료를 찾을 수 없습니다: %s/%s/%s" % (agency, station, var)), 404
+    cnt = {1: 0, 2: 0, 3: 0, 4: 0, 9: 0}
+    for p in series:
+        cnt[p["flag"]] = cnt.get(p["flag"], 0) + 1
+    n = len(series)
+    retained = cnt[1] + cnt[2]
+    flagged = cnt[3] + cnt[9]
     return jsonify({
-        "var": var, "varName": vmeta["name"],
-        "obsCode": st.get("obsCode"),
-        "name": st.get("name"),
-        "lat": st.get("lat"),
-        "lon": st.get("lon"),
-        "unit": vmeta["unit"],
-        "qc": result,
+        "agency": agency, "agencyName": D.agency_name(agency),
+        "station": station, "name": D.station_name(agency, station),
+        "var": var, "varName": vmeta["name"], "unit": vmeta["unit"],
+        "n": n, "good": cnt[1], "suspect": cnt[2], "bad": cnt[3],
+        "interp": cnt[4], "missing": cnt[9],
+        "retained": retained, "flagged": flagged,
+        "flag_rate_pct": round(100.0 * flagged / n, 1) if n else 0.0,
+        "series": series,   # [{time, value, flag(1/2/3/4/9)}]
     })
 
 
-@app.route("/api/qc/summary")
-def api_qc_summary():
-    var = request.args.get("var", V.DEFAULT_VAR)
-    vmeta = V.get(var)
-    params = _parse_params(request.args)
-    rows = []
-    for meta in D.list_stations(var):
-        st = D.load_station(var, meta["obsCode"])
-        if st is None:
-            continue
-        r = QC.run_qc(st.get("series", []), params, base=vmeta["qc"])
-        rows.append({
-            "obsCode": meta["obsCode"],
-            "name": meta["name"],
-            "lat": meta.get("lat"),
-            "lon": meta.get("lon"),
-            "n": r["n"],
-            "n_flagged": r["n_flagged"],
-            "flags": r["flags"],
-        })
-    rows.sort(key=lambda x: x["n_flagged"], reverse=True)
-    eff = QC.run_qc([], params, base=vmeta["qc"])["params"]
-    return jsonify({"var": var, "varName": vmeta["name"], "unit": vmeta["unit"],
-                    "params": eff, "stations": rows})
+# ---------------------------------------------------------------------------
+# 카탈로그 / QC 자료 다운로드(CSV)
+# ---------------------------------------------------------------------------
+@app.route("/api/catalog")
+def api_catalog():
+    """전 기관 관측소 목록(+해역·변수). 검색·다운로드 범위 선택용."""
+    return jsonify(D.list_all_stations())
+
+
+_EXPORT_COLS = ["time", "agency", "station_id", "lat", "lon",
+                "var_id", "value", "depth_m", "flag_final"]
+
+
+@app.route("/api/download")
+def api_download():
+    """QC 필터 CSV 다운로드.
+    params: targets='agency:station,...'  vars='all'|'v1,v2'
+            start/end='YYYY-MM-DD'(옵션)  maxflag=int(flag_final 이하만)."""
+    targets = request.args.get("targets", "")
+    vars_p = (request.args.get("vars", "") or "").strip()
+    start = (request.args.get("start") or "").strip() or None
+    end = (request.args.get("end") or "").strip() or None
+    try:
+        max_flag = int(request.args.get("maxflag", str(D.FLAG_MISSING)))
+    except (ValueError, TypeError):
+        max_flag = D.FLAG_MISSING
+    try:
+        min_flag = int(request.args.get("minflag", "1"))
+    except (ValueError, TypeError):
+        min_flag = 1
+    var_ids = None if (not vars_p or vars_p == "all") else [v for v in vars_p.split(",") if v]
+
+    pairs = []
+    for t in targets.split(","):
+        t = t.strip()
+        if ":" in t:
+            a, s = t.split(":", 1)
+            if a and s:
+                pairs.append((a.strip(), s.strip()))
+    # 경로/와일드카드 주입 차단 — 카탈로그에 실재하는 관측소만 허용
+    allowed = D.valid_targets()
+    pairs = [p for p in pairs if p in allowed]
+    if not pairs:
+        return jsonify(error="유효한 관측소가 없습니다."), 400
+
+    buf = io.StringIO()
+    buf.write("﻿")          # Excel 한글 BOM
+    w = csv.writer(buf)
+    w.writerow(_EXPORT_COLS)
+    n = 0
+    for a, s in pairs:
+        for r in D.export_rows(a, s, var_ids, start, end, max_flag, min_flag):
+            w.writerow([r.get(c, "") for c in _EXPORT_COLS])
+            n += 1
+
+    fname = "qc_export_%s.csv" % dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    return Response(
+        buf.getvalue(), mimetype="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=%s" % fname,
+            "X-Row-Count": str(n),
+            "Cache-Control": "no-store",
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
-# QC 통계 산출 (LLM 입력 / 보고서 표 공용)
+# LLM 분석 / 보고서 — sample_data flag → report.py 호환 ctx 변환
 # ---------------------------------------------------------------------------
-def _qc_context(var, obs, params):
-    """단일 관측소(또는 __ALL__) QC 결과 → 통계 dict. 없으면 None."""
-    vmeta = V.get(var)
-    if obs == "__ALL__":
-        return _qc_context_all(var, params)
-    st = D.load_station(var, obs)
-    if st is None:
+# flag_final → report.py 플래그(ok/range/spike/missing)
+_FMAP = {1: "ok", 2: "ok", 4: "ok", 3: "range", 9: "missing"}
+
+
+def _sample_context(agency, station, var, period):
+    """sample_data 시계열 → report.station_stats 호환 통계 ctx. 없으면 None."""
+    series = _filter_series_time(D.load_series(agency, station, var), period)
+    if not series:
         return None
-    r = QC.run_qc(st.get("series", []), params, base=vmeta["qc"])
-    return R.station_stats(st, r, vmeta)
-
-
-def _qc_context_all(var, params):
-    """전 관측소 통합 QC 통계."""
     vmeta = V.get(var)
-    stations = []
-    for meta in D.list_stations(var):
-        st = D.load_station(var, meta["obsCode"])
-        if st is None:
-            continue
-        r = QC.run_qc(st.get("series", []), params, base=vmeta["qc"])
-        stations.append(R.station_stats(st, r, vmeta))
-    return R.network_stats(stations, params, vmeta)
+    values, flags, n_flag = [], {}, 0
+    for p in series:
+        f = _FMAP.get(p["flag"], "missing")
+        values.append({"date": (p["time"] or "")[:10], "value": p["value"],
+                       "flag": f, "reason": ""})
+        flags[f] = flags.get(f, 0) + 1
+        if f != "ok":
+            n_flag += 1
+    qc = {"values": values, "flags": flags, "n": len(values), "n_flagged": n_flag,
+          "params": {"range_min": 0.0, "range_max": 0.0, "window": 0, "mad_k": 0.0}}
+    meta = D.station_meta(agency, station)
+    st = {"obsCode": station, "name": meta["name"], "lat": meta["lat"], "lon": meta["lon"]}
+    ctx = R.station_stats(st, qc, vmeta)
+    ctx["period"] = period or "all"
+    ctx["period_label"] = PERIOD_LABEL.get(period or "all", "전체 기간")
+    ctx["agency"] = agency
+    ctx["agency_name"] = D.agency_name(agency)
+    return ctx
 
 
-# ---------------------------------------------------------------------------
-# 분석/보고서 API
-# ---------------------------------------------------------------------------
 @app.route("/api/chat", methods=["POST"])
 def api_chat():
     data = request.get_json(force=True, silent=True) or {}
+    agency = data.get("agency", "")
+    station = data.get("station", "")
     var = data.get("var", V.DEFAULT_VAR)
-    obs = data.get("obs", "")
     question = (data.get("message") or "").strip()
-    params = data.get("params") or {}
-    ctx = _qc_context(var, obs, params)
+    period = data.get("period")
+    ctx = _sample_context(agency, station, var, period)
     if ctx is None:
-        return jsonify(ok=False, error="분석할 관측소 자료가 없습니다."), 404
-
+        return jsonify(ok=False, error="분석할 자료가 없습니다."), 404
     prompt = R.build_prompt(ctx, question)
     reply = run_claude(prompt)
     if not reply:
-        reply = R.fallback_analysis(ctx, question)
-        return jsonify(ok=True, analysis=reply, fallback=True, scope=ctx.get("scope"))
-    return jsonify(ok=True, analysis=reply, fallback=False, scope=ctx.get("scope"))
+        return jsonify(ok=True, analysis=R.fallback_analysis(ctx, question), fallback=True)
+    return jsonify(ok=True, analysis=reply, fallback=False)
 
 
 @app.route("/api/report", methods=["POST"])
 def api_report():
     data = request.get_json(force=True, silent=True) or {}
-    var = data.get("var", V.DEFAULT_VAR)
-    obs = data.get("obs", "")
+    agency = data.get("agency", "")
+    station = data.get("station", "")
     question = (data.get("message") or "").strip()
-    analysis = (data.get("analysis") or "").strip()
-    params = data.get("params") or {}
-    ctx = _qc_context(var, obs, params)
-    if ctx is None:
-        return jsonify(ok=False, error="보고서로 만들 관측소 자료가 없습니다."), 404
-    if not analysis:
-        # 분석 내용이 없으면 즉석에서 생성 시도
-        analysis = run_claude(R.build_prompt(ctx, question)) or R.fallback_analysis(ctx, question)
+    period = data.get("period")
+
+    # 변수 정규화: vars(목록) 우선, 없으면 단일 var. 다중이면 하나의 통합 보고서.
+    vars_in = data.get("vars")
+    if isinstance(vars_in, str):
+        varlist = [v.strip() for v in vars_in.split(",") if v.strip()]
+    elif isinstance(vars_in, list):
+        varlist = [str(v).strip() for v in vars_in if str(v).strip()]
+    else:
+        varlist = [data.get("var", V.DEFAULT_VAR)]
+    # 재사용 분석: analyses{varkey:text}(다중) 또는 analysis(단일 호환)
+    analyses_in = data.get("analyses") if isinstance(data.get("analyses"), dict) else {}
+    analysis_single = (data.get("analysis") or "").strip()
+
+    blocks = []
+    for v in varlist:
+        ctx = _sample_context(agency, station, v, period)
+        if ctx is None:
+            continue
+        a = (analyses_in.get(v) or "").strip()
+        if not a and len(varlist) == 1:
+            a = analysis_single
+        if not a:
+            a = run_claude(R.build_prompt(ctx, question)) or R.fallback_analysis(ctx, question)
+        blocks.append((ctx, a))
+    if not blocks:
+        return jsonify(ok=False, error="보고서로 만들 자료가 없습니다."), 404
 
     try:
-        fname = R.build_report(ctx, analysis, question, REPORTS_DIR)
+        if len(blocks) == 1:
+            fname = R.build_report(blocks[0][0], blocks[0][1], question, REPORTS_DIR)
+        else:
+            fname = R.build_report_multi(blocks, question, REPORTS_DIR)
     except Exception as e:
         import traceback
         app.logger.error(traceback.format_exc())
         return jsonify(ok=False, error="보고서 생성 실패: %s" % e), 500
-    return jsonify(ok=True, filename=fname, url="/api/report/download/%s" % fname)
+    return jsonify(ok=True, filename=fname, url="/api/report/download/%s" % fname, n_vars=len(blocks))
 
 
 @app.route("/api/report/download/<path:fname>")

@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GeoSR 조위관측소 QC 플랫폼</title>
+  <title>GeoSR 데이터 수집 모니터링 · QC</title>
   <link rel="icon" href="/static/symbol.png">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.css">
-  <link rel="stylesheet" href="/static/styles.css?v=3">
+  <link rel="stylesheet" href="/static/styles.css?v=27">
   <script src="/static/plotly-2.35.2.min.js" charset="utf-8"></script>
 </head>
 <body>
@@ -14,78 +14,143 @@
     <header class="header">
       <img class="logo" src="/static/logo_kr.png" alt="GeoSR" onerror="this.style.display='none'">
       <div class="title-box">
-        <div class="title">조위관측소 관측자료 품질관리(QC) 플랫폼</div>
-        <div class="subtitle">국립해양조사원 조위관측소 실측자료 · 변수별 이상치 검출 및 AI 분석·보고서</div>
+        <div class="title">GSR · 데이터 수집 모니터링 & QC</div>
+        <div class="subtitle">모델·관측·위성 수집 현황 한눈에 · KHOA·KMA·NIFS 관측소 실측자료 품질관리(QC)</div>
       </div>
     </header>
 
     <div class="body">
-      <!-- 좌측: 콘텐츠 -->
+      <!-- 좌측: 데이터 수집 현황 대시보드 -->
       <main class="content">
-        <section class="card">
-          <div class="card-head">
-            <h2>변수별 수집 현황</h2>
-            <span class="muted">관측 항목(변수)을 선택하면 해당 자료로 QC를 수행합니다.</span>
+        <div class="dash-head">
+          <div>
+            <div class="kicker">해양관측 자료 품질관리 · 통합 모니터링</div>
+            <h1 class="dash-title">관측자료 수집·품질관리 현황</h1>
+            <p class="dash-sub">3개 기관(KHOA·KMA·NIFS) 관측자료의 수집 적시성과 품질관리(QC) 결과를 통합 점검합니다. 관측 카드를 선택하면 변수 → 관측소 → QC 시계열로 이동합니다.</p>
           </div>
-          <div id="var-cards" class="var-cards"></div>
-        </section>
-
-        <section class="card">
-          <div class="controls">
-            <div class="field">
-              <label for="variable">변수(항목)</label>
-              <select id="variable"></select>
-            </div>
-            <div class="field">
-              <label for="station">관측소</label>
-              <select id="station"></select>
-            </div>
-            <div class="field"><label for="range_min">하한</label><input id="range_min" type="number" step="0.5"></div>
-            <div class="field"><label for="range_max">상한</label><input id="range_max" type="number" step="0.5"></div>
-            <div class="field"><label for="window">윈도</label><input id="window" type="number" step="2" min="3"></div>
-            <div class="field"><label for="mad_k">MAD k</label><input id="mad_k" type="number" step="0.5" min="1"></div>
-            <button id="apply" class="btn-primary">QC 적용</button>
-            <span id="status" class="status"></span>
+          <div class="dash-actions">
+            <button id="open-download" class="btn-ghost accent">⬇ 데이터 다운로드</button>
+            <button id="refresh" class="btn-ghost">↻ 새로고침</button>
           </div>
-        </section>
+        </div>
 
-        <section class="stats" id="stats"></section>
+        <!-- 전역 타이핑 검색 -->
+        <div class="global-search">
+          <span class="gs-ic" aria-hidden="true">🔎</span>
+          <input id="global-q" class="global-q" type="text" autocomplete="off" spellcheck="false"
+                 placeholder="관측소·변수·기관 검색 — 예: 인천, DT_0001, 수온, 기상청">
+          <kbd class="gs-hint">↑↓ Enter</kbd>
+          <div id="global-results" class="gs-results" hidden></div>
+        </div>
 
-        <section class="card">
-          <h2 class="card-title">QC 시계열 <span class="muted" id="chart-sub"></span></h2>
-          <div id="chart"></div>
-        </section>
+        <section class="summary" id="summary-cards"></section>
 
-        <section class="card">
-          <h2 class="card-title">전 관측소 이상치 요약 <span class="muted">(현재 파라미터 기준)</span></h2>
-          <div id="summary"></div>
-        </section>
+        <!-- 소스 매트릭스 / 드릴다운(변수·시계열) -->
+        <div id="matrix"></div>
       </main>
 
-      <!-- 우측: AI 채팅 패널 -->
+      <!-- 우측: LLM 분석 / 품질 결과 보고서 탭 패널 -->
       <aside class="chat">
-        <div class="chat-head">
-          <h3>🤖 AI 데이터 분석</h3>
-          <p>선택한 자료의 QC 결과를 근거로 분석·답변하고, 한글 보고서를 만들어 드립니다.</p>
+        <div class="panel-tabs">
+          <button class="panel-tab active" data-tab="llm" type="button">🤖 LLM 분석</button>
+          <button class="panel-tab" data-tab="report" type="button">📄 품질 결과 보고서</button>
         </div>
-        <div class="chat-context">
-          <div class="ctx-target">분석 대상: <b id="chat-target">—</b></div>
-          <label class="scope-toggle"><input type="checkbox" id="scope_all"> 전국 통합</label>
-        </div>
-        <div id="messages" class="messages"></div>
-        <div class="composer">
-          <div class="row">
-            <textarea id="question"
-              placeholder="데이터 기반으로 질문하세요. 예) 이 이상치가 계측 오류인지 실제 현상인지 판단해줘"></textarea>
-            <button id="ask" class="btn send">전송</button>
+
+        <!-- LLM 분석 탭 -->
+        <div class="panel-pane" id="pane-llm">
+          <div id="messages" class="messages"></div>
+          <div class="composer">
+            <div class="row">
+              <textarea id="question" placeholder="예) 수온 시계열 보여줘 / 제거된 자료가 계측오류인지 판단해줘"></textarea>
+              <button id="ask" class="btn send">전송</button>
+            </div>
           </div>
-          <button id="report" class="btn report" disabled>📄 한글 보고서(HWPX) 생성</button>
-          <div id="report-status" class="report-status"></div>
+        </div>
+
+        <!-- 품질 결과 보고서 탭 -->
+        <div class="panel-pane" id="pane-report" hidden>
+          <div class="report-pane">
+            <div class="rp-intro">분석할 <b>기관 · 관측소 · 변수 · 기간</b>을 선택한 뒤 품질 결과 보고서를 생성합니다. 체크한 변수마다 한글(HWPX) 보고서가 만들어집니다.</div>
+            <div class="rs-row">
+              <span class="rs-label">기관</span>
+              <select id="chat-agency" title="기관"></select>
+            </div>
+            <div class="rs-row">
+              <span class="rs-label">관측소</span>
+              <select id="report-station" title="관측소"></select>
+            </div>
+            <div class="rs-field">
+              <span class="rs-label-top">변수 <span class="rs-hint">(체크한 변수를 분석·보고)</span></span>
+              <div class="ck-dd" id="report-var-dd">
+                <button type="button" class="ck-trigger" id="report-var-trigger"><span class="ck-tx">전체 변수</span><span class="ck-caret">▾</span></button>
+                <div class="ck-panel" id="report-vars" hidden></div>
+              </div>
+            </div>
+            <div class="rs-row">
+              <span class="rs-label">기간</span>
+              <div class="period-row">
+                <button class="period-btn active" data-p="all">전체</button>
+                <button class="period-btn" data-p="1y">1년</button>
+                <button class="period-btn" data-p="1m">1개월</button>
+              </div>
+            </div>
+            <button id="report" class="btn report" disabled>📄 품질 결과 보고서(HWPX) 생성</button>
+            <div id="report-status" class="report-status"></div>
+          </div>
         </div>
       </aside>
     </div>
   </div>
 
-  <script src="/static/app.js?v=3"></script>
+  <!-- ⬇ QC 자료 다운로드 모달 -->
+  <div id="dl-modal" class="modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="dl-title">
+      <div class="modal-head">
+        <h3 id="dl-title">⬇ QC 자료 다운로드</h3>
+        <button class="modal-x" data-close title="닫기" aria-label="닫기">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="dl-field">
+          <label>기관</label>
+          <div class="dl-regions" id="dl-agencies"></div>
+          <div class="dl-stations" id="dl-stations"></div>
+        </div>
+        <div class="dl-field">
+          <label>변수 <span class="dl-hint">(체크한 변수만 다운로드)</span></label>
+          <div class="ck-dd" id="dl-var-dd">
+            <button type="button" class="ck-trigger" id="dl-var-trigger"><span class="ck-tx">전체 변수</span><span class="ck-caret">▾</span></button>
+            <div class="ck-panel" id="dl-vars" hidden></div>
+          </div>
+        </div>
+        <div class="dl-field">
+          <label>기간 <span class="dl-hint">(비우면 전체 기간)</span></label>
+          <div class="dl-period">
+            <div class="wdate" id="wd-start" aria-label="시작일"></div>
+            <input type="hidden" id="dl-start">
+            <span class="dl-tilde">~</span>
+            <div class="wdate" id="wd-end" aria-label="종료일"></div>
+            <input type="hidden" id="dl-end">
+          </div>
+        </div>
+        <div class="dl-field">
+          <label for="dl-maxflag">QC 등급 필터 <span class="dl-hint">(flag_final 값이 선택값 이하인 자료만)</span></label>
+          <select id="dl-maxflag">
+            <option value="1">1 — 양호(good)만</option>
+            <option value="2" selected>2 이하 — 양호+의심 (보존자료)</option>
+            <option value="3">3 이하 — 불량(bad)까지 포함</option>
+            <option value="4">4 이하 — 보간(interp)까지 포함</option>
+            <option value="9">전체 — 결측(missing) 포함</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <span id="dl-summary" class="dl-summary"></span>
+        <button id="dl-go" class="btn report" disabled>CSV 다운로드</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js?v=27"></script>
 </body>
 </html>

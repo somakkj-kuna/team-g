@@ -156,7 +156,7 @@ def build_prompt(ctx: Dict[str, Any], question: str) -> str:
     return (
         "당신은 해양 관측자료 품질관리(QC) 전문가입니다. 아래 QC 결과(JSON)를 근거로 "
         "%s를 수행하세요.\n\n"
-        "%s\n\n"
+        "[분석 범위] %s\n%s\n\n"
         "[QC 결과 데이터]\n%s\n\n"
         "[사용자 질문]\n%s\n\n"
         "작성 규칙:\n"
@@ -165,8 +165,8 @@ def build_prompt(ctx: Dict[str, Any], question: str) -> str:
         "- 데이터에 없는 사실을 지어내지 말고, 불확실하면 가능성으로 서술하세요.\n"
         "- 한국어로, 보고서에 바로 넣을 수 있는 분량(섹션당 2~5개 항목)으로 작성하세요.\n\n"
         "[섹션 구조]\n%s\n"
-        % (focus, qc_desc, _ctx_json(ctx), question or "(특정 질문 없음 — 전반적 QC 품질 진단 수행)",
-           sections_guide)
+        % (focus, ctx.get("period_label", "전체 기간"), qc_desc, _ctx_json(ctx),
+           question or "(특정 질문 없음 — 전반적 QC 품질 진단 수행)", sections_guide)
     )
 
 
@@ -322,9 +322,10 @@ def build_report(ctx: Dict[str, Any], analysis: str, question: str, reports_dir:
 
     vn = ctx.get("var_name", "수온")
     u = ctx.get("unit", "℃")
+    plab = ctx.get("period_label", "전체 기간")
     ts = time.strftime("%Y%m%d_%H%M%S")
     nm = re.sub(r"[^0-9A-Za-z가-힣]", "", (ctx.get("name") or "관측소")) or "관측소"
-    fname = "%s_%sQC_보고서_%s.hwpx" % (nm, vn, ts)
+    fname = "%s_%s_%sQC_보고서_%s.hwpx" % (nm, plab.replace(" ", ""), vn, ts)
     out_path = os.path.join(reports_dir, fname)
     figdir = os.path.join(reports_dir, "figs")
     os.makedirs(figdir, exist_ok=True)
@@ -338,6 +339,7 @@ def build_report(ctx: Dict[str, Any], analysis: str, question: str, reports_dir:
 
     p = ctx["params"]
     b.section("분석 개요")
+    b.item("분석 범위: %s (작성일 %s 기준)" % (plab, time.strftime("%Y-%m-%d")))
     if ctx["scope"] == "network":
         b.item("분석 대상: 전국 조위관측소 %d개소 %s 자료" % (ctx["n_stations"], vn))
     else:
@@ -402,6 +404,101 @@ def build_report(ctx: Dict[str, Any], analysis: str, question: str, reports_dir:
         cap = ("그림 1. 관측소별 이상치 개수" if ctx["scope"] == "network"
                else "그림 1. QC 시계열 (정상값·이상치 표시)")
         b.figure(chart, caption=cap, width_hwpunit=45000)
+
+    b.build(out_path, title=title, creator="(주)지오시스템리서치 예보사업부")
+    return fname
+
+
+def build_report_multi(blocks: List[Any], question: str, reports_dir: str) -> str:
+    """동일 관측소·기간의 여러 변수 (ctx, analysis)를 하나의 HWPX로 통합. 파일명 반환.
+
+    blocks: [(ctx, analysis_text), ...]  (각 ctx는 station scope, var만 다름)
+    구조: 분석 개요 → 변수별 QC 통계 요약(표) → 변수별 상세(통계표·이상치표·LLM분석·차트)."""
+    if not blocks:
+        raise ValueError("blocks is empty")
+    if len(blocks) == 1:
+        return build_report(blocks[0][0], blocks[0][1], question, reports_dir)
+    if HWPX_SCRIPTS not in sys.path:
+        sys.path.insert(0, HWPX_SCRIPTS)
+    from yebobu_builder import YeoboBuilder
+
+    first = blocks[0][0]
+    name = first.get("name") or "관측소"
+    obs = first.get("obsCode")
+    plab = first.get("period_label", "전체 기간")
+    today = time.strftime("%Y-%m-%d")
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    nm = re.sub(r"[^0-9A-Za-z가-힣]", "", name) or "관측소"
+    var_names = [c.get("var_name") or c.get("var") for c, _ in blocks]
+    fname = "%s_%s_QC보고서_%d변수_%s.hwpx" % (nm, plab.replace(" ", ""), len(blocks), ts)
+    out_path = os.path.join(reports_dir, fname)
+    figdir = os.path.join(reports_dir, "figs")
+    os.makedirs(figdir, exist_ok=True)
+
+    b = YeoboBuilder()
+    title = "%s 관측자료 품질관리(QC) 분석 보고서" % name
+    b.title(title)
+
+    # 분석 개요
+    b.section("분석 개요")
+    b.item("분석 범위: %s (작성일 %s 기준)" % (plab, today))
+    b.item("분석 대상: %s 관측소(%s)" % (name, obs))
+    b.item("분석 변수: %s (%d종)" % (", ".join(var_names), len(blocks)))
+    b.item("자료 출처: 국립해양조사원·기상청·국립수산과학원 관측소 실측자료")
+    if question:
+        b.item("분석 요청: %s" % question)
+    b.item("작성일: %s" % today)
+
+    # 변수별 QC 통계 요약(통합 표)
+    b.section("변수별 QC 통계 요약")
+    sum_rows = []
+    for ctx, _ in blocks:
+        u = ctx.get("unit", "")
+        has = ctx.get("mean") is not None
+        sum_rows.append([
+            ctx.get("var_name") or ctx.get("var"),
+            "%d" % ctx["n"],
+            "%d" % ctx["n_ok"],
+            "%d (%.1f%%)" % (ctx["n_flagged"], ctx["flag_rate_pct"]),
+            ("%s%s" % (ctx.get("mean"), u)) if has else "-",
+            ("%s ~ %s%s" % (ctx.get("tmin"), ctx.get("tmax"), u)) if has else "-",
+        ])
+    b.data_table(["변수", "관측수", "정상", "이상치", "평균", "범위"], sum_rows,
+                 col_widths=[9000, 6000, 6000, 8000, 6000, 7000],
+                 caption="표 1. 변수별 QC 통계 요약")
+
+    # 변수별 상세
+    for idx, (ctx, analysis) in enumerate(blocks, 1):
+        vn = ctx.get("var_name") or ctx.get("var")
+        u = ctx.get("unit", "")
+        b.section("%d. %s 품질관리 결과" % (idx, vn))
+        b.data_table(["항목", "값"], [
+            ["전체 관측수", "%d점" % ctx["n"]],
+            ["정상", "%d점" % ctx["n_ok"]],
+            ["이상치", "%d점 (%.1f%%)" % (ctx["n_flagged"], ctx["flag_rate_pct"])],
+            ["플래그 분포", ", ".join("%s %d" % (FLAG_KO.get(k, k), v) for k, v in ctx["flags"].items())],
+            ["기간 평균", "%s %s" % (ctx.get("mean"), u)],
+            ["범위", "%s ~ %s %s" % (ctx.get("tmin"), ctx.get("tmax"), u)],
+            ["분석 기간", "%s ~ %s" % (ctx.get("start"), ctx.get("end"))],
+        ], col_widths=[16000, 26000], caption="표 %d. %s QC 통계" % (idx + 1, vn))
+
+        out_rows = [[o["date"], "%s %s" % (o["value"], u) if o["value"] is not None else "-",
+                     o["flag_ko"]] for o in ctx["outliers"]]
+        if out_rows:
+            b.data_table(["일자", vn, "유형"], out_rows,
+                         col_widths=[14000, 14000, 14000],
+                         caption="표 %d-1. %s 이상치 (최대 30건)" % (idx + 1, vn))
+
+        # LLM 분석 본문 — 변수 섹션 하위로 한 단계 들여쓰기(섹션 제목→ㅇ, 항목→-)
+        for sec in parse_structured(analysis):
+            b.item(sec["heading"])
+            for it in sec["items"]:
+                b.sub(it["text"])
+
+        chart = _qc_chart_png(ctx, figdir, "%s_%d" % (ts, idx))
+        if chart and os.path.exists(chart):
+            b.figure(chart, caption="그림 %d. %s QC 시계열 (정상값·이상치 표시)" % (idx, vn),
+                     width_hwpunit=45000)
 
     b.build(out_path, title=title, creator="(주)지오시스템리서치 예보사업부")
     return fname

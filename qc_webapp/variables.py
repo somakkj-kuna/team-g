@@ -1,42 +1,46 @@
 # -*- coding: utf-8 -*-
-"""조위관측소 QC 대상 변수(관측 항목) 레지스트리.
+"""관측 변수(var_id) 레지스트리 — sample_data long CSV의 var_id 기준.
 
-KHOA 조위관측소는 수온 외에도 조위·염분·기온·기압·풍속 등 여러 항목을 관측한다.
-각 변수는 자료 디렉터리(downloads/<dir>)·단위·물리 QC 기본 파라미터를 가진다.
-새 변수를 추가하려면 VARIABLES 에 항목을 더하고 같은 스키마의 자료를
-downloads/<dir>/ 아래에 두면 UI·QC·보고서가 자동으로 인식한다.
-
-자료 스키마(변수 공통): DT_XXXX.json
-  {"obsCode","name","lat","lon","unit","interval_min","count",
-   "series": [[date, mean, min, max, count], ...]}
+sample_data QC 결과(flag/final CSV)는 long 포맷으로 한 행에 1개 var_id를 담는다.
+여기서는 var_id → 한글명·단위 매핑만 제공한다. (QC는 이미 수행된 flag_final 사용)
 """
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-# 변수별 QC 기본 파라미터 — range_min/max 는 항목의 물리적 범위(한반도 주변해역 기준)
+# var_id 메타 (한글명, 단위). sample_data 3기관에서 등장하는 변수 + qc_rules.toml 변수.
 VARIABLES: List[Dict[str, Any]] = [
-    {"key": "water_temp", "name": "수온", "unit": "℃", "dir": "khoa_water_temp",
-     "qc": {"range_min": -2.0, "range_max": 35.0, "window": 7, "mad_k": 3.5}},
-    {"key": "tide", "name": "조위", "unit": "cm", "dir": "khoa_tide",
-     "qc": {"range_min": -100.0, "range_max": 1100.0, "window": 7, "mad_k": 4.0}},
-    {"key": "salinity", "name": "염분", "unit": "psu", "dir": "khoa_salinity",
-     "qc": {"range_min": 0.0, "range_max": 40.0, "window": 7, "mad_k": 3.5}},
-    {"key": "air_temp", "name": "기온", "unit": "℃", "dir": "khoa_air_temp",
-     "qc": {"range_min": -30.0, "range_max": 45.0, "window": 7, "mad_k": 3.5}},
-    {"key": "air_pressure", "name": "기압", "unit": "hPa", "dir": "khoa_air_pressure",
-     "qc": {"range_min": 900.0, "range_max": 1100.0, "window": 7, "mad_k": 4.0}},
-    {"key": "wind_speed", "name": "풍속", "unit": "m/s", "dir": "khoa_wind",
-     "qc": {"range_min": 0.0, "range_max": 75.0, "window": 7, "mad_k": 4.0}},
+    {"key": "temp",          "name": "수온",        "unit": "℃"},
+    {"key": "sur_temp",      "name": "표층수온",    "unit": "℃"},
+    {"key": "mid_temp",      "name": "중층수온",    "unit": "℃"},
+    {"key": "bot_temp",      "name": "저층수온",    "unit": "℃"},
+    {"key": "sal",           "name": "염분",        "unit": "psu"},
+    {"key": "tide_real",     "name": "실측조위",    "unit": "cm"},
+    {"key": "tide_pre",      "name": "예측조위",    "unit": "cm"},
+    {"key": "air_temp",      "name": "기온",        "unit": "℃"},
+    {"key": "air_pres",      "name": "기압",        "unit": "hPa"},
+    {"key": "air_humi",      "name": "습도",        "unit": "%"},
+    {"key": "wave_h",        "name": "파고",        "unit": "m"},
+    {"key": "wind_dir",      "name": "풍향",        "unit": "°"},
+    {"key": "wind_speed",    "name": "풍속",        "unit": "m/s"},
+    {"key": "wind_gust",     "name": "돌풍",        "unit": "m/s"},
+    {"key": "wind_u",        "name": "풍속 U성분",  "unit": "m/s"},
+    {"key": "wind_v",        "name": "풍속 V성분",  "unit": "m/s"},
+    {"key": "current_speed", "name": "유속",        "unit": "m/s"},
+    {"key": "current_dir",   "name": "유향",        "unit": "°"},
+    {"key": "current_u",     "name": "유속 U성분",  "unit": "m/s"},
+    {"key": "current_v",     "name": "유속 V성분",  "unit": "m/s"},
 ]
 
 _BY_KEY = {v["key"]: v for v in VARIABLES}
-DEFAULT_VAR = "water_temp"
+DEFAULT_VAR = "temp"
 
 
 def get(key: Optional[str]) -> Dict[str, Any]:
-    """변수 메타 반환. 알 수 없는 key 는 기본 변수(수온)."""
-    return _BY_KEY.get(key or DEFAULT_VAR, _BY_KEY[DEFAULT_VAR])
+    """var_id 메타 반환. 미등록 key는 key 자체를 이름으로 사용(단위 빈값)."""
+    if key in _BY_KEY:
+        return _BY_KEY[key]
+    return {"key": key or DEFAULT_VAR, "name": key or DEFAULT_VAR, "unit": ""}
 
 
 def keys() -> List[str]:
